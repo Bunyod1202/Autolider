@@ -1,0 +1,17 @@
+version: "3.9"
+services:
+  web:
+    build: .
+    container_name: avtolider_web
+    restart: unless-stopped
+    environment:
+      - DJANGO_SETTINGS_MODULE=avtolider_bot.settings
+      - DATABASE_URL=postgres://postgres:root123@host.docker.internal:5432/avtolider_db
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - /opt/migrated_apps/data/avtolider/media:/app/media
+      - /opt/migrated_apps/data/avtolider/static:/app/static
+      - /opt/migrated_apps/data/avtolider/logs:/app/logs
+    ports:
+      - "8012:8000"
