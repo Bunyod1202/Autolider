@@ -17,10 +17,14 @@ bot: TeleBot = bot_initializer(TOKEN)
 def web_hook_view(request, token):
     if token == TOKEN:
         if request.headers.get('content-type') == 'application/json':
-            json_string = request.body.decode('utf-8')
-            update = Update.de_json(json_string)
-            bot.process_new_updates([update])
-            return JsonResponse({'ok': True})
+            try:
+                json_string = request.body.decode('utf-8')
+                update = Update.de_json(json_string)
+                bot.process_new_updates([update])
+                return JsonResponse({'ok': True})
+            except Exception as e:
+                print(f"Webhook xatosi: {e}")
+                return JsonResponse({'ok': False, 'description': str(e)})
         else:
             return JsonResponse({'ok': False, 'description': 'Incorrect format of content type.'})
     else:

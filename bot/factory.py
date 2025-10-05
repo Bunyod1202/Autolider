@@ -10,7 +10,7 @@ from bot.handlers.inline_query import initializer_inline_query_handlers
 from bot.handlers.channel_post import initializer_channel_post_handlers
 from bot.handlers.pre_checkout_query_handler import initializer_pre_checkout_query_handlers
 
-init = False
+init = True
 
 
 def bot_initializer(token):

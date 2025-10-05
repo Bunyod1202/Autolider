@@ -1,6 +1,6 @@
 TOKEN = "7201071278:AAGG3FP-GQGMPgTIAbJmSpwgXga-Ak0pAa0"
 
-BASE_URL = "https://avtolider.medias.uz"
+BASE_URL = "https://avto-lider.uz"
 
 
 CHAT_ID_FOR_NOTIFIER = -1002498547077

@@ -13,17 +13,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-1q8%28=3rx+q5fmd4wvii*dh4#(&e_4^j+^ryl$f&=f&+g+oy='  # Keyinroq environment variable ga o'tkazish maqsadga muvofiq
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False  # ✅ Production uchun False qiling
+DEBUG = True  # ✅ Production uchun False qiling
 
 ALLOWED_HOSTS = [
-    "avtolider.medias.uz", 
-    "localhost", 
-    "127.0.0.1",
-    "www.avtolider.medias.uz",  # ✅ WWW uchun qo'shing
-    "45.151.122.32"  # ✅ Server IP manzilingizni qo'shing
+    'avto-lider.uz',
+    'www.avto-lider.uz',
+    'localhost',
+    '127.0.0.1',
+    '45.151.122.32',  # Server IP manzilingizni qo'shing
 ]
 
-
+# CSRF sozlamalari
+CSRF_TRUSTED_ORIGINS = [
+    'http://avto-lider.uz',
+    'https://avto-lider.uz',
+    'http://www.avto-lider.uz',
+    'https://www.avto-lider.uz',
+]
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -78,8 +84,8 @@ WSGI_APPLICATION = 'avtolider_bot.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'avtolider_db',
-        'USER': 'postgres',
+        'NAME': 'autolider',
+        'USER': 'avtolider_user',
         'PASSWORD': 'bunyod1202',
         'HOST': 'localhost',
         'PORT': '5432',
@@ -108,7 +114,6 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'Asia/Tashkent'
 USE_I18N = True
 USE_TZ = False
-
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
