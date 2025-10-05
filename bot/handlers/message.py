@@ -293,7 +293,7 @@ def initializer_message_handlers(_: TeleBot):
         tariff_id, provider_id = message.successful_payment.invoice_payload.split()
         tariff: Tariff = Tariff.objects.get(id=tariff_id)
         provider: Provider = Provider.objects.get(id=provider_id)
-        last_subscription: Subscription = user.subscriptions.filter(is_checked=False, expire_time__lt=now)
+        last_subscription = user.subscriptions.filter(is_checked=False, expire_time__lt=now).last()
         expire_time = now + timezone.timedelta(days=tariff.days)
         if last_subscription:
             expire_time = last_subscription.expire_time + timezone.timedelta(days=tariff.days)
