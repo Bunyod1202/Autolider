@@ -13,7 +13,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-1q8%28=3rx+q5fmd4wvii*dh4#(&e_4^j+^ryl$f&=f&+g+oy='  # Keyinroq environment variable ga o'tkazish maqsadga muvofiq
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False  # ✅ Production uchun False qiling
+DEBUG = True  # ✅ Production uchun False qiling
 
 ALLOWED_HOSTS = [
     "avtolider.medias.uz", 
