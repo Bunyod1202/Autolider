@@ -21,7 +21,7 @@ ALLOWED_HOSTS = [
     os.getenv("DOMAIN_WWW"),
     'localhost',
     '127.0.0.1',
-    os,getenv("SERVER_IP"),  # Server IP manzilingizni qo'shing
+    os.getenv("SERVER_IP"),  # Server IP manzilingizni qo'shing
 ]
 
 # CSRF sozlamalari
