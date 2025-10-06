@@ -1,32 +1,48 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from telebot import TeleBot
-from bot.utils.constants import TOKEN
 from subscriptions.models import Subscription
+from telebot import TeleBot
+from bot.utils.constants import BOT_TOKEN
+
+import os
+from datetime import datetime
+
+# Bot obyektini yaratamiz
+bot = TeleBot(BOT_TOKEN)
 
 class Command(BaseCommand):
-    help = "Check expired subscriptions and deactivate users"
+    help = "Tugagan obunalarni tekshiradi va userni noaktiv holatga o‘tkazadi"
 
     def handle(self, *args, **options):
-        bot = TeleBot(TOKEN)
         now = timezone.now()
-        subscriptions = Subscription.objects.filter(is_checked=False, expire_time__lt=now)
+        expired_subs = Subscription.objects.filter(is_checked=False, expire_time__lt=now)
 
-        count = 0
-        for subscription in subscriptions:
-            subscription.user.is_active = False
-            subscription.user.save()
-            subscription.is_checked = True
-            subscription.save()
-            count += 1
+        total_checked = expired_subs.count()
 
-            if subscription.user.telegram_id:
-                try:
-                    bot.send_message(
-                        subscription.user.telegram_id,
-                        "⏰ Sizning obunangiz muddati tugadi. Iltimos, qayta to‘lovni amalga oshiring."
-                    )
-                except Exception as e:
-                    print(f"Xatolik: {e}")
+        log_path = "/root/Autolider/logs/cron.log"
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
 
-        self.stdout.write(self.style.SUCCESS(f"✅ {count} ta obuna tekshirildi va tugaganlari o‘chirildi."))
+        with open(log_path, "a") as log:
+            log.write(f"\n🕓 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Obunalar tekshirildi\n")
+            if total_checked == 0:
+                log.write("✅ Tugagan obunalar topilmadi.\n")
+            else:
+                for sub in expired_subs:
+                    user = sub.user
+
+                    msg = f"❌ {user.username or user.full_name} obunasi tugadi ({sub.expire_time.strftime('%Y-%m-%d %H:%M')})\n"
+                    log.write(msg)
+
+                    # Foydalanuvchiga xabar yuborish
+                    if user.telegram_id:
+                        try:
+                            bot.send_message(
+                                user.telegram_id,
+                                user.text.your_subscription_is_expired
+                            )
+                        except Exception as e:
+                            log.write(f"⚠️ Xabar yuborishda xatolik: {e}\n")
+
+                log.write(f"✅ {total_checked} ta obuna tekshirildi va tugaganlari o‘chirildi.\n")
+
+        print(f"✅ {total_checked} ta obuna tekshirildi va tugaganlari o‘chirildi.")
