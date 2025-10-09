@@ -293,12 +293,16 @@ def initializer_message_handlers(_: TeleBot):
         tariff_id, provider_id = message.successful_payment.invoice_payload.split()
         tariff: Tariff = Tariff.objects.get(id=tariff_id)
         provider: Provider = Provider.objects.get(id=provider_id)
-        last_subscription = user.subscriptions.filter(is_checked=False, expire_time__lt=now).last()
-        expire_time = now + timezone.timedelta(days=tariff.days)
-        if last_subscription:
-            expire_time = last_subscription.expire_time + timezone.timedelta(days=tariff.days)
+        # Extend from the latest unchecked subscription's expire_time if it is in the future,
+        # otherwise start from now. This accumulates remaining days properly.
+        last_unchecked = user.subscriptions.filter(is_checked=False).order_by('-expire_time').first()
+        base_time = now
+        if last_unchecked and last_unchecked.expire_time > now:
+            base_time = last_unchecked.expire_time
+        expire_time = base_time + timezone.timedelta(days=tariff.days)
         if not user.is_active:
             user.is_active = True
+            user.save(update_fields=["is_active"])  # persist activation
         subscription: Subscription = Subscription.objects.create(
             user=user,
             tariff=tariff,

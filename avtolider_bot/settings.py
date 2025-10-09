@@ -14,7 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("SECRET_KEY")  # Keyinroq environment variable ga o'tkazish maqsadga muvofiq
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG")  # ✅ Production uchun False qiling
+DEBUG = bool(os.getenv("DEBUG",default=False))  # ✅ Production uchun False qiling
 
 ALLOWED_HOSTS = [
      os.getenv("DOMAIN"),
@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'bot',
     'users',
     'payments',
-    'subscriptions',
+    'subscriptions.apps.SubscriptionsConfig',
     'quizzes',
     'tests',
 ]

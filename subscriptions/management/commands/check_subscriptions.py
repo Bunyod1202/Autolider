@@ -1,48 +1,41 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
+
 from subscriptions.models import Subscription
-from telebot import TeleBot
-from bot.utils.constants import BOT_TOKEN
+from subscriptions.utils import refresh_user_active_status
+from users.models import User
 
-import os
-from datetime import datetime
-
-# Bot obyektini yaratamiz
-bot = TeleBot(BOT_TOKEN)
 
 class Command(BaseCommand):
-    help = "Tugagan obunalarni tekshiradi va userni noaktiv holatga o‘tkazadi"
+    help = (
+        "Tugagan obunalarni tekshiradi va foydalanuvchini is_active=False holatga o'tkazadi.\n"
+        "Admin orqali berilgan muddat tugaganda ham avtomatik o'chadi."
+    )
 
     def handle(self, *args, **options):
         now = timezone.now()
-        expired_subs = Subscription.objects.filter(is_checked=False, expire_time__lt=now)
 
-        total_checked = expired_subs.count()
+        # 1) Avval tugagan, hali tekshirilmagan obunalarni yopamiz
+        expired = Subscription.objects.filter(is_checked=False, expire_time__lt=now)
+        total_expired = expired.count()
+        for sub in expired:
+            sub.is_checked = True
+            sub.save(update_fields=["is_checked"])
 
-        log_path = "/root/Autolider/logs/cron.log"
-        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+        # 2) Endi barcha tegishli foydalanuvchilar holatini sinxronlaymiz
+        user_ids = Subscription.objects.values_list('user_id', flat=True).distinct()
+        users = User.objects.filter(id__in=user_ids)
+        deactivated = 0
+        activated = 0
+        for user in users:
+            before = user.is_active
+            changed = refresh_user_active_status(user)
+            if changed:
+                if before and not user.is_active:
+                    deactivated += 1
+                elif (not before) and user.is_active:
+                    activated += 1
 
-        with open(log_path, "a") as log:
-            log.write(f"\n🕓 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Obunalar tekshirildi\n")
-            if total_checked == 0:
-                log.write("✅ Tugagan obunalar topilmadi.\n")
-            else:
-                for sub in expired_subs:
-                    user = sub.user
-
-                    msg = f"❌ {user.username or user.full_name} obunasi tugadi ({sub.expire_time.strftime('%Y-%m-%d %H:%M')})\n"
-                    log.write(msg)
-
-                    # Foydalanuvchiga xabar yuborish
-                    if user.telegram_id:
-                        try:
-                            bot.send_message(
-                                user.telegram_id,
-                                user.text.your_subscription_is_expired
-                            )
-                        except Exception as e:
-                            log.write(f"⚠️ Xabar yuborishda xatolik: {e}\n")
-
-                log.write(f"✅ {total_checked} ta obuna tekshirildi va tugaganlari o‘chirildi.\n")
-
-        print(f"✅ {total_checked} ta obuna tekshirildi va tugaganlari o‘chirildi.")
+        self.stdout.write(self.style.SUCCESS(
+            f"{total_expired} ta obuna yopildi. {deactivated} ta foydalanuvchi o'chirildi, {activated} ta yoqildi."
+        ))
