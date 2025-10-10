@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.utils import timezone
 from django.utils.html import format_html
 from django import forms
+from django.db.models import OuterRef, Subquery
 
 from users import models
 from subscriptions.models import Subscription, Tariff
@@ -76,31 +77,46 @@ class UserAdmin(admin.ModelAdmin):
     ]
     actions = ['recalculate_active_status']
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        # Annotate latest active (unchecked) subscription expire time for sorting
+        latest_expire_subq = Subscription.objects.filter(
+            user=OuterRef('pk'), is_checked=False
+        ).order_by('-expire_time').values('expire_time')[:1]
+        return qs.annotate(latest_expire_time=Subquery(latest_expire_subq))
+
+    @admin.display(description="remaining days", ordering='latest_expire_time')
     def days_left(self, obj: models.User):
         now = timezone.now()
-        sub = obj.subscriptions.filter(is_checked=False, expire_time__gte=now).order_by('-expire_time').first()
-        if not sub:
-            return 0
-        delta = sub.expire_time - now
+        # Prefer annotated value to avoid extra queries and enable sorting
+        expire_time = getattr(obj, 'latest_expire_time', None)
+        if expire_time is None or expire_time < now:
+            # Fallback to DB check only if needed
+            sub = obj.subscriptions.filter(is_checked=False, expire_time__gte=now).order_by('-expire_time').first()
+            if not sub:
+                return 0
+            expire_time = sub.expire_time
+        delta = expire_time - now
         return max(0, delta.days)
 
-    days_left.short_description = "remaining days"
-
+    @admin.display(description='expire time', ordering='latest_expire_time')
     def expires_at(self, obj: models.User):
         now = timezone.now()
-        sub = obj.subscriptions.filter(is_checked=False).order_by('-expire_time').first()
-        if not sub:
+        expire_time = getattr(obj, 'latest_expire_time', None)
+        if expire_time is None:
+            sub = obj.subscriptions.filter(is_checked=False).order_by('-expire_time').first()
+            if sub:
+                expire_time = sub.expire_time
+        if not expire_time:
             return '-'
-        label = sub.expire_time.strftime('%Y-%m-%d %H:%M')
-        if sub.expire_time < now:
+        label = expire_time.strftime('%Y-%m-%d %H:%M')
+        if expire_time < now:
             # If expired but user still active, try to resync status now
             if obj.is_active:
                 refresh_user_active_status(obj)
             # Show expired dates in red
             return format_html('<span style="color:#d00;">{} (expired)</span>', label)
         return label
-
-    expires_at.short_description = 'expire time'
 
     def save_model(self, request, obj: models.User, form, change):
         prev_is_active = None
