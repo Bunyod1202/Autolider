@@ -2,18 +2,22 @@ from django.utils import timezone
 from telebot import types, TeleBot
 from bot.utils.constants import CHAT_ID_FOR_NOTIFIER
 from subscriptions.models import Subscription
+from subscriptions.utils import refresh_user_active_status
 
 def check_expired_subscriptions(bot: TeleBot = None):
     now = timezone.now()
     subscriptions = Subscription.objects.filter(is_checked=False, expire_time__lt=now)
 
     for subscription in subscriptions:
-        subscription.user.is_active = False
-        subscription.user.save()
+        # Mark this subscription as processed
         subscription.is_checked = True
-        subscription.save()
+        subscription.save(update_fields=["is_checked"])
 
-        if bot and subscription.user.telegram_id:
+        # Refresh user's active status based on remaining subscriptions
+        changed = refresh_user_active_status(subscription.user)
+
+        # Notify only if user became inactive (no active subscriptions left)
+        if bot and subscription.user.telegram_id and not subscription.user.is_active:
             try:
                 bot.send_message(
                     subscription.user.telegram_id,

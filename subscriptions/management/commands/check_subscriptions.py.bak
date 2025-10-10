@@ -1,0 +1,49 @@
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+from subscriptions.models import Subscription
+from telebot import TeleBot
+from bot.utils.constants import BOT_TOKEN
+
+import os
+from datetime import datetime
+
+# Bot obyektini yaratamiz
+bot = TeleBot(BOT_TOKEN)
+
+class Command(BaseCommand):
+    help = "Tugagan obunalarni tekshiradi va userni noaktiv holatga o‘tkazadi"
+
+    def handle(self, *args, **options):
+        now = timezone.now()
+        expired_subs = Subscription.objects.filter(is_checked=False, expire_time__lt=now)
+
+        total_checked = expired_subs.count()
+
+        log_path = "/root/Autolider/logs/cron.log"
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+
+        with open(log_path, "a") as log:
+            log.write(f"\n🕓 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Obunalar tekshirildi\n")
+            if total_checked == 0:
+                log.write("✅ Tugagan obunalar topilmadi.\n")
+            else:
+                for sub in expired_subs:
+                    user = sub.user
+
+                    msg = f"❌ {user.username or user.full_name} obunasi tugadi ({sub.expire_time.strftime('%Y-%m-%d %H:%M')})\n"
+                    log.write(msg)
+
+                    # Foydalanuvchiga xabar yuborish
+                    if user.telegram_id:
+                        try:
+                            bot.send_message(
+                                user.telegram_id,
+                                user.text.your_subscription_is_expired
+                            )
+                        except Exception as e:
+                            log.write(f"⚠️ Xabar yuborishda xatolik: {e}\n")
+
+                log.write(f"✅ {total_checked} ta obuna tekshirildi va tugaganlari o‘chirildi.\n")
+
+        print(f"✅ {total_checked} ta obuna tekshirildi va tugaganlari o‘chirildi.")
+

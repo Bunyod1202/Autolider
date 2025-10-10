@@ -14,18 +14,26 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("SECRET_KEY")  # Keyinroq environment variable ga o'tkazish maqsadga muvofiq
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False  # ✅ Production uchun False qiling
 
-ALLOWED_HOSTS = [
-     os.getenv("DOMAIN"),
-    os.getenv("DOMAIN_WWW"),
+DEBUG = str(os.getenv('DEBUG', 'False')).strip().lower() in ('1','true','t','yes','y','on')
+
+
+# Normalize ALLOWED_HOSTS (drop None)
+ALLOWED_HOSTS = [h for h in [
+    os.getenv('DOMAIN'),
+    os.getenv('DOMAIN_WWW'),
     'localhost',
     '127.0.0.1',
-    os.getenv("SERVER_IP"),  # Server IP manzilingizni qo'shing
-]
+    os.getenv('SERVER_IP'),
+] if h]
+
+
+_csrf_env = os.getenv('CSRF_TRUSTED_ORIGINS', '')
+CSRF_TRUSTED_ORIGINS = [o.strip().strip('"').strip("'") for o in _csrf_env.split(',') if o.strip()]
 
 # CSRF sozlamalari
 CSRF_TRUSTED_ORIGINS = [ 'http://avto-lider.uz', 'https://avto-lider.uz', 'http://www.avto-lider.uz', 'https://www.avto-lider.uz', ]
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -40,7 +48,7 @@ INSTALLED_APPS = [
     'bot',
     'users',
     'payments',
-    'subscriptions',
+    'subscriptions.apps.SubscriptionsConfig',
     'quizzes',
     'tests',
 ]
@@ -83,8 +91,8 @@ DATABASES = {
         'NAME': os.getenv("DB_NAME"),
         'USER': os.getenv("DB_USER"),
         'PASSWORD': os.getenv("DB_PASSWORD"),
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'HOST': os.getenv("DB_HOST", 'localhost'),
+        'PORT': os.getenv("DB_PORT", '5432'),
     }
 }
 
@@ -125,11 +133,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
-# CSRF
-CSRF_TRUSTED_ORIGINS = [
-    "https://avtolider.medias.uz",
-    "https://www.avtolider.medias.uz",  # ✅ WWW uchun qo'shing
-]
+# CSRF (from env above)
+# End CSRF block removed
 
 # ✅ Xavfsizlik sozlamalari
 SECURE_BROWSER_XSS_FILTER = True

@@ -9,8 +9,10 @@ from bot.utils.constants import TOKEN
 from quizzes.models import Theme, Option
 from tests.models import Test
 from users.models import User
+from subscriptions.utils import refresh_user_active_status
 
 bot: TeleBot = bot_initializer(TOKEN)
+
 
 
 @csrf_exempt
@@ -118,6 +120,8 @@ def theme_detail_view(request, theme_id: int):
 @csrf_exempt
 def test_view(request):
     user: User = User.objects.get(id=request.POST.get('user_id'))
+    # Sync user's active status with subscriptions before allowing access
+    refresh_user_active_status(user)
     if user.is_active:
         theme: Theme = Theme.objects.get(id=request.POST.get('theme_id'))
         return render(
@@ -153,6 +157,8 @@ def test_view(request):
 @csrf_exempt
 def save_test_view(request):
     user: User = User.objects.get(id=request.POST.get('user_id'))
+    # Sync user's active status with subscriptions before saving results
+    refresh_user_active_status(user)
     if user.is_active:
         theme: Theme = Theme.objects.get(id=request.POST.get('theme_id'))
         spent_seconds = int(request.POST.get('spent_seconds', 0))

@@ -31,14 +31,17 @@
     <div class="fixed-top" id="header" style="background-color: #ffffff;">
         <div class="container">
             <div class="d-flex justify-content-between align-items-center py-4">
-                <h1 class="mb-0">{{ theme.name }}</h1>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="onBackClick()">{{ user.text.back }}</button>
+                    <h1 class="mb-0">{{ theme.name }}</h1>
+                </div>
                 <span id="timer">00:00:00</span>
             </div>
         </div>
     </div>
     <div class="container" id="body" style="margin-bottom: 70px;">
     {% for quiz in theme.quizzes %}
-        <div class="card my-2 d-none{% if forloop.first %} quiz-card-active{% endif %} border-0" id="quiz-{{ quiz.id }}">
+        <div class="card my-2 d-none{% if forloop.first %} quiz-card-active{% endif %} border-0" id="quiz-{{ quiz.id }}" data-answer-id="{{ quiz.answer.id }}">
           {% if quiz.image_url %}
           <img class="card-img-top" src="{{ quiz.image_url }}" alt="{{ quiz.question }}">
           {% endif %}
@@ -46,7 +49,7 @@
               <h5 class="card-title">{{ quiz.question | safe }}</h5>
               <hr/>
               {% for option in quiz.options %}
-                    <button id="quiz-option-{{ option.id }}" type="button" class="btn btn-light my-1" style="width: 100%;" onclick="selectQuizOption({{ quiz.id }}, {{ option.id}}, {{quiz.answer.id }});">{{ option.text }}</button>
+                    <button id="quiz-option-{{ option.id }}" type="button" class="btn btn-light my-1" style="width: 100%;" data-quiz-id="{{ quiz.id }}" data-option-id="{{ option.id }}" onclick="selectQuizOption({{ quiz.id }}, {{ option.id}}, {{quiz.answer.id }});">{{ option.text }}</button>
               {% endfor %}
           </div>
         </div>
@@ -68,6 +71,25 @@
         <input type="hidden" id="spent_seconds" name="spent_seconds" value="0"/>
         <input type="hidden" id="selected_options" name="selected_options" value=""/>
     </form>
+
+    <!-- Exit/Continue Modal -->
+    <div class="modal fade" id="exitModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">{{ user.text.back }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p>{{ user.text.are_you_sure|default:"Chiqmoqchimisiz? Saqlab, keyin davom ettirishingiz mumkin." }}</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="resumeTimer()">{{ user.text.continue_label|default:"Davom etish" }}</button>
+            <button type="button" class="btn btn-danger" onclick="confirmExit()">{{ user.text.exit_label|default:"Chiqish" }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3" crossorigin="anonymous"></script>
     <script type="text/javascript">
         let webApp = window.Telegram.WebApp;
@@ -75,13 +97,30 @@
 
         document.getElementById('body').style.marginTop = document.getElementById('header').offsetHeight + "px";
 
-        let quizzes_count = {{ theme.quizzes_count }};
+        const quizzes_count = {{ theme.quizzes_count }};
         let seconds = 0;
-        setInterval(() => {
-            seconds++;
-            let timer = document.getElementById('timer');
+        let timerId = null;
+        const stateKey = `test_state_{{ user.id }}_{{ theme.id }}`;
+
+        function startTimer(){
+            if(timerId !== null) return;
+            timerId = setInterval(() => {
+                seconds++;
+                renderTimer();
+                persistState();
+            }, 1000);
+        }
+        function stopTimer(){
+            if(timerId !== null){
+                clearInterval(timerId);
+                timerId = null;
+            }
+        }
+        function renderTimer(){
+            const timer = document.getElementById('timer');
             timer.innerHTML = pad(parseInt(seconds / 3600)) + ":" + pad(parseInt((seconds % 3600) / 60)) + ":" + pad(seconds%60);
-        }, 1000);
+        }
+        startTimer();
 
         function pad(val) {
           var valString = val + "";
@@ -97,12 +136,26 @@
             document.getElementsByClassName('quiz-btn-active')[0].classList.remove('quiz-btn-active');
             document.getElementById('quiz-' + quiz_id).classList.add('quiz-card-active');
             document.getElementById('quiz-' + quiz_id + '-btn').classList.add('quiz-btn-active');
+            persistState({ current_quiz_id: quiz_id });
         }
 
         let selected_options = [];
 
         function selectQuizOption(quiz_id, option_id, answer_id){
-            selected_options.push(option_id);
+            if(!selected_options.includes(option_id)){
+                selected_options.push(option_id);
+            }
+            applySelection(quiz_id, option_id, answer_id);
+            persistState();
+            if(selected_options.length === quizzes_count){
+                clearState();
+                document.getElementById('spent_seconds').value = seconds;
+                document.getElementById('selected_options').value = selected_options.join(',');
+                document.getElementById('form').submit()
+            }
+        }
+
+        function applySelection(quiz_id, option_id, answer_id){
             if(option_id === answer_id){
                 document.getElementById('quiz-option-' + option_id).classList.remove('btn-light');
                 document.getElementById('quiz-option-' + option_id).classList.add('btn-success');
@@ -117,12 +170,81 @@
             for(var b of document.getElementById('quiz-' + quiz_id).getElementsByTagName('button')){
                 b.removeAttribute('onclick');
             }
-            if(selected_options.length === quizzes_count){
-                document.getElementById('spent_seconds').value = seconds;
-                document.getElementById('selected_options').value = selected_options.join(',');
-                document.getElementById('form').submit()
-            }
         }
+
+        function getCurrentQuizId(){
+            const active = document.getElementsByClassName('quiz-card-active')[0];
+            if(!active) return null;
+            const id = active.id.replace('quiz-','');
+            return parseInt(id);
+        }
+
+        function persistState(extra){
+            const current_quiz_id = extra && extra.current_quiz_id ? extra.current_quiz_id : getCurrentQuizId();
+            const state = {
+                seconds,
+                current_quiz_id,
+                selected_options,
+            };
+            try { localStorage.setItem(stateKey, JSON.stringify(state)); } catch(e) {}
+        }
+
+        function restoreState(){
+            try {
+                const raw = localStorage.getItem(stateKey);
+                if(!raw) return;
+                const state = JSON.parse(raw);
+                if(state.seconds){ seconds = state.seconds; renderTimer(); }
+                if(Array.isArray(state.selected_options)){
+                    selected_options = state.selected_options;
+                    // Re-apply visual selections
+                    for(const optId of selected_options){
+                        const btn = document.getElementById('quiz-option-' + optId);
+                        if(!btn) continue;
+                        const qid = parseInt(btn.getAttribute('data-quiz-id'));
+                        const ansId = parseInt(document.getElementById('quiz-' + qid).getAttribute('data-answer-id'));
+                        applySelection(qid, optId, ansId);
+                    }
+                }
+                if(state.current_quiz_id){ goToQuiz(state.current_quiz_id); }
+            } catch(e) {}
+        }
+
+        function clearState(){
+            try { localStorage.removeItem(stateKey); } catch(e) {}
+        }
+
+        // Back handling
+        function onBackClick(){
+            stopTimer();
+            const modal = new bootstrap.Modal(document.getElementById('exitModal'));
+            modal.show();
+        }
+        function resumeTimer(){
+            startTimer();
+        }
+        function confirmExit(){
+            // Keep state saved, navigate back to theme detail
+            stopTimer();
+            persistState();
+            const form = document.createElement('form');
+            form.style.display = 'none';
+            form.method = 'post';
+            form.action = '/bot/themes/{{ theme.id }}/';
+            const uid = document.createElement('input');
+            uid.type = 'hidden';
+            uid.name = 'user_id';
+            uid.value = '{{ user.id }}';
+            form.appendChild(uid);
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        // Telegram native back button
+        try { webApp.BackButton.show(); webApp.BackButton.onClick(onBackClick); } catch(e) {}
+
+        // Restore previous state if any
+        restoreState();
 
         webApp.enableClosingConfirmation();
     </script>

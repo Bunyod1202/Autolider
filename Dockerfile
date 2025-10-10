@@ -10,5 +10,8 @@ import os, subprocess
 os.environ.setdefault('DJANGO_SETTINGS_MODULE','avtolider_bot.settings')
 subprocess.run(['python','manage.py','collectstatic','--noinput'], check=False)
 PY
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 EXPOSE 8000
-CMD ["gunicorn","--bind","0.0.0.0:8000","--workers","3","avtolider_bot.wsgi:application"]
+ENV PORT=8000
+CMD ["/entrypoint.sh"]

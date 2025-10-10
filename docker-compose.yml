@@ -6,7 +6,16 @@ services:
     restart: unless-stopped
     environment:
       - DJANGO_SETTINGS_MODULE=avtolider_bot.settings
-      - DATABASE_URL=postgres://postgres:root123@host.docker.internal:5432/avtolider_db
+      - DEBUG=0
+      - SECRET_KEY=${SECRET_KEY}
+      - DB_NAME=${DB_NAME:-avtolider_db}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-root123}
+      - DB_HOST=${DB_HOST:-host.docker.internal}
+      - DB_PORT=${DB_PORT:-5432}
+      - DOMAIN=${DOMAIN}
+      - DOMAIN_WWW=${DOMAIN_WWW}
+      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
