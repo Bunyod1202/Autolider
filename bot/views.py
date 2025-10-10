@@ -186,6 +186,8 @@ def test_result_view(request, test_id: int):
             'test': {
                 'id': test.id,
                 'theme': test.theme.name(test.user.text.language),
+                'theme_id': test.theme.id,
+                'user_id': test.user.id,
                 'spent_time': test.spent_time,
                 'correct_answers': test.correct_answers,
                 'added_time': test.added_time.strftime('%Y-%m-%d %H:%M:%S'),
