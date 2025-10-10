@@ -75,6 +75,8 @@ def theme_list_view(request):
 @csrf_exempt
 def theme_list_view(request):
     user: User = User.objects.get(id=request.GET.get('user_id'))
+    # Sync active status before showing themes
+    refresh_user_active_status(user)
     return render(
         request,
         'themes.html',
