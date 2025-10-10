@@ -64,9 +64,11 @@
         {% endif %}
 
         function goToNewTest(){
+            // Clear any previous saved progress for this user/theme
+            try { localStorage.removeItem(`test_state_{{ user.id }}_{{ theme.id }}`); } catch(e) {}
             let form = document.getElementById("form");
-            form.action = "/bot/test/"
-            form.method = "post"
+            form.action = "/bot/test/";
+            form.method = "post";
             form.submit();
         }
 
