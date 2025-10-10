@@ -45,6 +45,32 @@ def help_view(request):
         }
     )
 
+@csrf_exempt
+def theme_list_view(request):
+    user_id = request.GET.get('user_id')
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return JsonResponse({
+            'ok': False,
+            'error': f'User with id={user_id} not found.'
+        }, status=404)
+
+    return render(
+        request,
+        'themes.html',
+        context={
+            'user': user,
+            'themes': [
+                {
+                    'id': theme.id,
+                    'name': theme.name(user.text.language),
+                    'quizzes_count': theme.quizzes.filter(is_active=True).count(),
+                } for theme in Theme.objects.filter(is_active=True)
+            ],
+        }
+    )
+
 
 @csrf_exempt
 def theme_list_view(request):

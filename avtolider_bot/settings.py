@@ -14,8 +14,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("SECRET_KEY")  # Keyinroq environment variable ga o'tkazish maqsadga muvofiq
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# Re-evaluate DEBUG safely from env (string to bool)
+
 DEBUG = str(os.getenv('DEBUG', 'False')).strip().lower() in ('1','true','t','yes','y','on')
+
 
 # Normalize ALLOWED_HOSTS (drop None)
 ALLOWED_HOSTS = [h for h in [
@@ -26,9 +27,13 @@ ALLOWED_HOSTS = [h for h in [
     os.getenv('SERVER_IP'),
 ] if h]
 
-# CSRF Trusted Origins from env (comma-separated, with scheme)
+
 _csrf_env = os.getenv('CSRF_TRUSTED_ORIGINS', '')
 CSRF_TRUSTED_ORIGINS = [o.strip().strip('"').strip("'") for o in _csrf_env.split(',') if o.strip()]
+
+# CSRF sozlamalari
+CSRF_TRUSTED_ORIGINS = [ 'http://avto-lider.uz', 'https://avto-lider.uz', 'http://www.avto-lider.uz', 'https://www.avto-lider.uz', ]
+
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
