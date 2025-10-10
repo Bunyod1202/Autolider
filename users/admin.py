@@ -12,9 +12,9 @@ from subscriptions.utils import refresh_user_active_status
 class UserAdminForm(forms.ModelForm):
     activation_days = forms.IntegerField(
         required=False,
-        min_value=1,
+        min_value=0,
         initial=7,
-        help_text="Faollashtirish uchun kunlar soni (default: 7)"
+        help_text="Faollashtirish kunlari. 0 = cheksiz (doimiy). Default: 7"
     )
 
     class Meta:
@@ -118,9 +118,11 @@ class UserAdmin(admin.ModelAdmin):
         has_active_sub = obj.subscriptions.filter(is_checked=False, expire_time__gte=now).exists()
 
         if just_activated and not has_active_sub:
-            days = form.cleaned_data.get('activation_days') or 7
-            name_uz = f"Admin {days} kun"
-            name_ru = f"Admin {days} дней"
+            days = form.cleaned_data.get('activation_days')
+            if days is None:
+                days = 7
+            name_uz = f"Admin {'cheksiz' if days == 0 else days} kun"
+            name_ru = f"Admin {'бессрочно' if days == 0 else days} дней"
             tariff, created = Tariff.objects.get_or_create(
                 name_uz=name_uz,
                 defaults={
@@ -134,10 +136,16 @@ class UserAdmin(admin.ModelAdmin):
                 tariff.days = days
                 tariff.save(update_fields=['days'])
 
+            # Determine expire_time: 0 means indefinite -> far future (100 years)
+            if days == 0:
+                expire_time = now + timezone.timedelta(days=365*100)
+            else:
+                expire_time = now + timezone.timedelta(days=days)
+
             Subscription.objects.create(
                 user=obj,
                 tariff=tariff,
-                expire_time=now + timezone.timedelta(days=days),
+                expire_time=expire_time,
             )
 
         # If admin deactivated the user, mark all current active subs as checked
