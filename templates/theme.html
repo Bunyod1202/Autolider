@@ -21,7 +21,7 @@
                 </div>
                 <div class="col-4 text-end">
                     {% if user.is_active %}
-                    <button class="btn btn-primary" onclick="goToNewTest()">{{ user.text.start_testing }}</button>
+                    <button class="btn btn-primary" type="button" onclick="goToNewTest()">{{ user.text.start_testing }}</button>
                     {% else %}
                         <button class="btn btn-primary" type="button" onclick="youAreNotActive()">{{ user.text.start_testing }}</button>
                     {% endif %}
@@ -38,7 +38,7 @@
                     {{ user.text.correct_answers }} <b>{{ test.correct_answers }}</b><br/>
                 </p>
                 <p class="card-text"><small class="text-muted">{{ test.added_time }}</small></p>
-                <button class="btn btn-primary" onclick="goToTest({{ test.id }})">{{ user.text.see_more }}</button>
+                <button class="btn btn-primary" type="button" onclick="goToTest({{ test.id }})">{{ user.text.see_more }}</button>
               </div>
             </div>
             {% empty %}
@@ -80,8 +80,8 @@
 
         function goToTest(test_id){
             let form = document.getElementById("form");
-            form.action = "/bot/test/" + test_id + "/"
-            form.method = "post"
+            form.action = "/bot/test/" + test_id + "/";
+            form.method = "post";
             form.submit();
         }
 
@@ -91,14 +91,16 @@
             window.location.href = url;
         }
 
-        let webApp = window.Telegram.WebApp;
-        webApp.expand();
+        const webApp = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+        if (webApp) { try { webApp.expand(); } catch (e) {} }
         // Show Telegram-native back button and handle click
-        try {
-            webApp.BackButton.show();
-            webApp.BackButton.onClick(goBack);
-        } catch (e) {
-            // no-op if Telegram object unavailable
+        if (webApp) {
+            try {
+                webApp.BackButton.show();
+                webApp.BackButton.onClick(goBack);
+            } catch (e) {
+                // no-op if Telegram object unavailable
+            }
         }
     </script>
   </body>
