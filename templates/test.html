@@ -35,7 +35,10 @@
                     <button type="button" class="btn btn-outline-secondary btn-sm" onclick="onBackClick()">{{ user.text.back }}</button>
                     <h1 class="mb-0">{{ theme.name }}</h1>
                 </div>
-                <span id="timer">00:00:00</span>
+                <div class="d-flex align-items-center gap-2">
+                    <span id="timer">00:00:00</span>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="restartTest()">{{ user.text.start_testing }}</button>
+                </div>
             </div>
         </div>
     </div>
@@ -70,6 +73,10 @@
         <input type="hidden" name="theme_id" value="{{ theme.id }}"/>
         <input type="hidden" id="spent_seconds" name="spent_seconds" value="0"/>
         <input type="hidden" id="selected_options" name="selected_options" value=""/>
+    </form>
+    <form class="d-none" id="restart-form" action="/bot/test/" method="post">
+        <input type="hidden" name="user_id" value="{{ user.id }}"/>
+        <input type="hidden" name="theme_id" value="{{ theme.id }}"/>
     </form>
 
     <!-- Exit/Continue Modal -->
@@ -208,6 +215,12 @@
 
         function clearState(){
             try { localStorage.removeItem(stateKey); } catch(e) {}
+        }
+
+        function restartTest(){
+            stopTimer();
+            clearState();
+            document.getElementById('restart-form').submit();
         }
 
         // Back handling
