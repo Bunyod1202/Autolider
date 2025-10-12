@@ -14,14 +14,14 @@
             <div class="row d-flex justify-content-between align-items-center">
                 <div class="col-8">
                     <div class="d-flex align-items-center gap-2 mt-3">
-                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="goBack()">{{ user.text.back }}</button>
+                        <a href="/bot/themes/?user_id={{ user.id }}" class="btn btn-outline-secondary btn-sm">{{ user.text.back }}</a>
                         <h1 class="m-0">{{ theme.name }}</h1>
                     </div>
                     <span class="text-muted">{{ user.text.total_quizzes_count }} {{ theme.quizzes_count }}</span>
                 </div>
                 <div class="col-4 text-end">
                     {% if user.is_active %}
-                    <button class="btn btn-primary" type="button" onclick="goToNewTest()">{{ user.text.start_testing }}</button>
+                    <button class="btn btn-primary" type="submit" form="form" formaction="/bot/test/" formmethod="post" onclick="try{ localStorage.removeItem(`test_state_{{ user.id }}_{{ theme.id }}`);}catch(e){}">{{ user.text.start_testing }}</button>
                     {% else %}
                         <button class="btn btn-primary" type="button" onclick="youAreNotActive()">{{ user.text.start_testing }}</button>
                     {% endif %}
@@ -38,7 +38,7 @@
                     {{ user.text.correct_answers }} <b>{{ test.correct_answers }}</b><br/>
                 </p>
                 <p class="card-text"><small class="text-muted">{{ test.added_time }}</small></p>
-                <button class="btn btn-primary" type="button" onclick="goToTest({{ test.id }})">{{ user.text.see_more }}</button>
+                <button class="btn btn-primary" type="submit" form="form" formaction="/bot/test/{{ test.id }}/" formmethod="post">{{ user.text.see_more }}</button>
               </div>
             </div>
             {% empty %}
