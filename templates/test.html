@@ -205,6 +205,13 @@
                     }
                 }
                 if(state.current_quiz_id){ goToQuiz(state.current_quiz_id); }
+                // If all questions are already answered, auto-submit to analysis
+                if(Array.isArray(selected_options) && selected_options.length === quizzes_count){
+                    clearState();
+                    document.getElementById('spent_seconds').value = seconds;
+                    document.getElementById('selected_options').value = selected_options.join(',');
+                    document.getElementById('form').submit();
+                }
             } catch(e) {}
         }
 
