@@ -21,7 +21,7 @@
                 </div>
                 <div class="col-4 text-end">
                     {% if user.is_active %}
-                    <button class="btn btn-primary" type="submit" form="form" formaction="/bot/test/" formmethod="post" onclick="try{ localStorage.removeItem(`test_state_{{ user.id }}_{{ theme.id }}`);}catch(e){}">{{ user.text.start_testing }}</button>
+                    <button id="start-or-continue-btn" class="btn btn-primary" type="button" onclick="onStartClick()">{{ user.text.start_testing }}</button>
                     {% else %}
                         <button class="btn btn-primary" type="button" onclick="youAreNotActive()">{{ user.text.start_testing }}</button>
                     {% endif %}
@@ -69,9 +69,10 @@
             } catch (e) { alert(msg); }
         }
 
-        function goToNewTest(){
-            // Clear any previous saved progress for this user/theme
-            try { localStorage.removeItem(`test_state_{{ user.id }}_{{ theme.id }}`); } catch(e) {}
+        const stateKey = `test_state_{{ user.id }}_{{ theme.id }}`;
+        function onStartClick(){
+            // If there is saved progress, keep it so test.html can restore it.
+            // If there is no saved progress, nothing to clear.
             let form = document.getElementById("form");
             form.action = "/bot/test/";
             form.method = "post";
@@ -102,6 +103,17 @@
                 // no-op if Telegram object unavailable
             }
         }
+
+        // If saved progress exists, change button label to "Continue"
+        (function(){
+            try {
+                const saved = localStorage.getItem(stateKey);
+                if(saved){
+                    const btn = document.getElementById('start-or-continue-btn');
+                    if(btn){ btn.textContent = "{{ user.text.continue_label|default:'Davom etish' }}"; }
+                }
+            } catch(e) {}
+        })();
     </script>
   </body>
 </html>
