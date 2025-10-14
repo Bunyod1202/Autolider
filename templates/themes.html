@@ -17,8 +17,8 @@
     <div class="container">
       <div class="row">
         <div class="col">
-            <h1 class="mt-3 page-title">{{ user.text.themes }}</h1>
-            {% if user.is_active %}
+          
+              <h1 class="mt-3 page-title">{{ user.text.themes }}</h1>
               <div class="mt-3">
                 {% for theme in themes %}
                   <div class="mb-2">
@@ -38,11 +38,6 @@
                   </div>
                 {% endfor %}
               </div>
-            {% else %}
-              <div class="alert alert-warning mt-3" role="alert">
-                {{ user.text.your_subscription_is_expired|default:"Sizning obunangiz tugagan." }}
-              </div>
-            {% endif %}
         </div>
       </div>
     </div>
