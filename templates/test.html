@@ -7,11 +7,16 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
       <style>
+
           body { background: #f6f4fb; }
           .header-pill { border-radius: 999px; padding: 6px 12px; }
           .timer-pill { background:#0d6efd; color:#fff; border-radius:999px; padding:6px 12px; font-weight:600; }
           .title-center { text-align:center; font-weight:600; }
           .quiz-wrap { background:#ede7ff; border-radius:16px; padding:16px; }
+
+          /* Best-effort screenshot deterrents */
+          html, body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+          img { -webkit-user-drag: none; user-drag: none; }
           .quiz-card-active {
               display: block!important;
           }
@@ -56,6 +61,7 @@
             </div>
         </div>
     </div>
+   
     <div class="container" id="body" style="margin-bottom: 70px;">
     {% for quiz in theme.quizzes %}
         <div class="my-3 d-none{% if forloop.first %} quiz-card-active{% endif %}" id="quiz-{{ quiz.id }}" data-answer-id="{{ quiz.answer.id }}">
