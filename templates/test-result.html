@@ -6,6 +6,15 @@
     <title>ID{{ test.id }} {{ user.text.test_result }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+      /* Best-effort screenshot deterrents */
+      html, body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; background:#f6f4fb; }
+      img { -webkit-user-drag: none; user-drag: none; }
+      /* Watermark + blur */
+      #wm-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 1050; opacity: .10; display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 120px; }
+      .wm-cell { display:flex; align-items:center; justify-content:center; transform: rotate(-24deg); font-weight:700; color:#000; font-size:14px; }
+      #blur-overlay { position: fixed; inset: 0; background: rgba(255,255,255,.75); backdrop-filter: blur(6px); z-index: 1100; display: none; }
+    </style>
   </head>
   <body>
     <div class="container">
@@ -44,6 +53,9 @@
         </div>
       </div>
     </div>
+    <!-- Watermark + Blur overlays -->
+    <div id="wm-overlay" aria-hidden="true"></div>
+    <div id="blur-overlay" aria-hidden="true"></div>
     <form style="display:none" id="back-form" method="post">
       <input type="hidden" name="user_id" value="{{ test.user_id|default:user.id }}" />
     </form>
@@ -59,6 +71,24 @@
           webApp.expand();
           try{ webApp.BackButton.show(); webApp.BackButton.onClick(goBack);}catch(e){}
         }
+        // Best-effort: block context menu, add watermark, blur when hidden
+        (function(){
+          try { document.addEventListener('contextmenu', function(e){ e.preventDefault(); }, { passive:false }); } catch(e){}
+          const wm = document.getElementById('wm-overlay');
+          if(wm){
+            const text = `User {{ test.user_id|default:user.id }} • Theme {{ test.theme_id }}`;
+            const cells = 40;
+            for(let i=0;i<cells;i++){
+              const d = document.createElement('div');
+              d.className = 'wm-cell';
+              d.textContent = text;
+              wm.appendChild(d);
+            }
+          }
+          const blur = document.getElementById('blur-overlay');
+          function updateBlur(){ blur.style.display = document.hidden ? 'block' : 'none'; }
+          document.addEventListener('visibilitychange', updateBlur);
+        })();
     </script>
   </body>
 </html>

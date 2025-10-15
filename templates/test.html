@@ -7,6 +7,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
       <style>
+          /* Best-effort screenshot deterrents */
+          html, body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+          img { -webkit-user-drag: none; user-drag: none; }
           .quiz-card-active {
               display: block!important;
           }
@@ -25,6 +28,11 @@
               background-color: #e1949b;
               border-color: #de7a83;
           }
+          /* Watermark overlay */
+          #wm-overlay { position: fixed; inset: 0; pointer-events: none; z-index: 1050; opacity: .10; display: grid; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 120px; }
+          .wm-cell { display:flex; align-items:center; justify-content:center; transform: rotate(-24deg); font-weight:700; color:#000; font-size:14px; }
+          /* Blur overlay when hidden */
+          #blur-overlay { position: fixed; inset: 0; background: rgba(255,255,255,.75); backdrop-filter: blur(6px); z-index: 1100; display: none; }
       </style>
   </head>
   <body>
@@ -41,6 +49,9 @@
             </div>
         </div>
     </div>
+    <!-- Watermark + Blur overlays -->
+    <div id="wm-overlay" aria-hidden="true"></div>
+    <div id="blur-overlay" aria-hidden="true"></div>
     <div class="container" id="body" style="margin-bottom: 70px;">
     {% for quiz in theme.quizzes %}
         <div class="card my-2 d-none{% if forloop.first %} quiz-card-active{% endif %} border-0" id="quiz-{{ quiz.id }}" data-answer-id="{{ quiz.answer.id }}">
@@ -261,6 +272,25 @@
 
         // Restore previous state if any
         restoreState();
+
+        // Best-effort: block context menu, add watermark, blur when hidden
+        (function(){
+            try { document.addEventListener('contextmenu', function(e){ e.preventDefault(); }, { passive:false }); } catch(e){}
+            const wm = document.getElementById('wm-overlay');
+            if(wm){
+                const text = `User {{ user.id }} • Theme {{ theme.id }}`;
+                const cells = 40;
+                for(let i=0;i<cells;i++){
+                    const d = document.createElement('div');
+                    d.className = 'wm-cell';
+                    d.textContent = text;
+                    wm.appendChild(d);
+                }
+            }
+            const blur = document.getElementById('blur-overlay');
+            function updateBlur(){ blur.style.display = document.hidden ? 'block' : 'none'; }
+            document.addEventListener('visibilitychange', updateBlur);
+        })();
 
         if (webApp) { try { webApp.enableClosingConfirmation(); } catch(e) {} }
     </script>
