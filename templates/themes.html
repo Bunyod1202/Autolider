@@ -6,13 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
     <style>
-      body { background: #f6f4fb; }
+      body { background: #fff ; }
       .page-title { text-align: center; font-weight: 600; }
       .title-with-logo { display:flex; align-items:center; justify-content:center; gap:8px; }
       .title-with-logo img.logo { height: 28px; width:auto; object-fit: contain; border-radius: 4px; display:inline-block; }
       .theme-item { width: 100%; border: 0; outline: 0; text-align: left; background: #ede7ff; border-radius: 16px; padding: 12px 16px; }
       .theme-item:hover { background: #e4ddff; }
-      .theme-name { font-size: 16px; flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      /* Wrap text to next line (no ellipsis) */
+      .theme-name { font-size: 16px; flex:1 1 auto; min-width:0; white-space:normal; word-break:break-word; overflow:visible; }
       .theme-count { font-weight: 600; color: #3c3c3c; opacity: .8; }
     </style>
   </head>
