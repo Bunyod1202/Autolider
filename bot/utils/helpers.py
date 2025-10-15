@@ -97,34 +97,39 @@ def sending_post(bot: TeleBot, message: types.Message, sender: User):
                     user.telegram_id,
                     message.audio.file_id,
                     caption=message.html_caption,
-                    reply_markup=message.reply_markup
+                    reply_markup=message.reply_markup,
+                    protect_content=True,
                 )
             elif message.voice:
                 bot.send_voice(
                     user.telegram_id,
                     message.voice.file_id,
                     caption=message.html_caption,
-                    reply_markup=message.reply_markup
+                    reply_markup=message.reply_markup,
+                    protect_content=True,
                 )
             elif message.video:
                 bot.send_video(
                     user.telegram_id,
                     message.video.file_id,
                     caption=message.html_caption,
-                    reply_markup=message.reply_markup
+                    reply_markup=message.reply_markup,
+                    protect_content=True,
                 )
             elif message.photo:
                 bot.send_photo(
                     user.telegram_id,
                     message.photo[-1].file_id,
                     caption=message.html_caption,
-                    reply_markup=message.reply_markup
+                    reply_markup=message.reply_markup,
+                    protect_content=True,
                 )
             else:
                 bot.send_message(
                     user.telegram_id,
                     message.html_text,
-                    reply_markup=message.reply_markup
+                    reply_markup=message.reply_markup,
+                    protect_content=True,
                 )
             total += 1
             sleep(0.05)
@@ -141,5 +146,6 @@ def sending_post(bot: TeleBot, message: types.Message, sender: User):
         sender.text.posting_end.format(
             user_counts=len(users),
             total=total
-        )
+        ),
+        protect_content=True,
     )
