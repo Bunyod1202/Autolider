@@ -1,4 +1,5 @@
 from admin_auto_filters.filters import AutocompleteFilter
+import json
 from django.contrib import admin
 from django.utils import timezone
 from django.utils.html import format_html
@@ -90,6 +91,23 @@ class UserAdmin(admin.ModelAdmin):
         now = timezone.now()
         # Prefer annotated value to avoid extra queries and enable sorting
         expire_time = getattr(obj, 'latest_expire_time', None)
+        # Admin manual activation (no tariff/subscription): read from obj.data
+        if (expire_time is None) and obj.is_admin and obj.is_active:
+            try:
+                data = json.loads(obj.data) if obj.data else {}
+            except Exception:
+                data = {}
+            admin_exp = data.get('admin_expires_at')
+            if admin_exp:
+                if admin_exp == 'infinite':
+                    return 365 * 100
+                try:
+                    exp = timezone.datetime.fromisoformat(admin_exp)
+                    if timezone.is_naive(exp):
+                        exp = exp.replace(tzinfo=timezone.utc)
+                    expire_time = exp
+                except Exception:
+                    expire_time = None
         if expire_time is None or expire_time < now:
             # Fallback to DB check only if needed
             sub = obj.subscriptions.filter(is_checked=False, expire_time__gte=now).order_by('-expire_time').first()
@@ -104,6 +122,23 @@ class UserAdmin(admin.ModelAdmin):
         now = timezone.now()
         expire_time = getattr(obj, 'latest_expire_time', None)
         if expire_time is None:
+            # Admin manual activation display
+            if obj.is_admin and obj.is_active:
+                try:
+                    data = json.loads(obj.data) if obj.data else {}
+                except Exception:
+                    data = {}
+                admin_exp = data.get('admin_expires_at')
+                if admin_exp:
+                    if admin_exp == 'infinite':
+                        return 'infinite'
+                    try:
+                        exp = timezone.datetime.fromisoformat(admin_exp)
+                        if timezone.is_naive(exp):
+                            exp = exp.replace(tzinfo=timezone.utc)
+                        expire_time = exp
+                    except Exception:
+                        expire_time = None
             sub = obj.subscriptions.filter(is_checked=False).order_by('-expire_time').first()
             if sub:
                 expire_time = sub.expire_time
@@ -137,6 +172,22 @@ class UserAdmin(admin.ModelAdmin):
             days = form.cleaned_data.get('activation_days')
             if days is None:
                 days = 7
+            if obj.is_admin:
+                # Admin: do NOT create Tariff/Subscription. Store manual activation meta in user.data and exit.
+                try:
+                    data = json.loads(obj.data) if obj.data else {}
+                except Exception:
+                    data = {}
+                if days == 0:
+                    data['admin_expires_at'] = 'infinite'
+                else:
+                    expire_time = now + timezone.timedelta(days=days)
+                    data['admin_expires_at'] = expire_time.isoformat()
+                data['admin_activation_days'] = days
+                data['admin_manual_activation'] = True
+                obj.data = json.dumps(data)
+                obj.save(update_fields=['data'])
+                return
             name_uz = f"Admin {'cheksiz' if days == 0 else days} kun"
             name_ru = f"Admin {'бессрочно' if days == 0 else days} дней"
             tariff, created = Tariff.objects.get_or_create(
@@ -145,7 +196,8 @@ class UserAdmin(admin.ModelAdmin):
                     'name_ru': name_ru,
                     'days': days,
                     'price': 0,
-                    'is_active': True,
+                    # Admin-activation tariff should be hidden from user UI
+                    'is_active': False,
                 }
             )
             if not created and tariff.days != days:
@@ -167,6 +219,17 @@ class UserAdmin(admin.ModelAdmin):
         # If admin deactivated the user, mark all current active subs as checked
         if change and (prev_is_active is True) and (obj.is_active is False):
             obj.subscriptions.filter(is_checked=False, expire_time__gte=now).update(is_checked=True)
+            # Clear admin manual activation metadata
+            if obj.is_admin and obj.data:
+                try:
+                    data = json.loads(obj.data)
+                    for k in ['admin_expires_at', 'admin_activation_days', 'admin_manual_activation']:
+                        if k in data:
+                            data.pop(k)
+                    obj.data = json.dumps(data)
+                    obj.save(update_fields=['data'])
+                except Exception:
+                    pass
 
     def recalculate_active_status(self, request, queryset):
         updated = 0
