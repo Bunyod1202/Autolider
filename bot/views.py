@@ -6,6 +6,8 @@ from telebot.types import Update
 
 from bot.factory import bot_initializer
 from bot.utils.constants import TOKEN
+import re
+
 from quizzes.models import Theme, Option
 from tests.models import Test
 from users.models import User
@@ -104,7 +106,7 @@ def theme_detail_view(request, theme_id: int):
             'user': user,
             'theme': {
                 'id': theme.id,
-                'name': theme.name(user.text.language),
+                    'name': theme.name(user.text.language),
                 'quizzes_count': theme.quizzes.filter(is_active=True).count(),
             },
             'tests': [
@@ -215,3 +217,9 @@ def test_result_view(request, test_id: int):
             }
         }
     )
+
+
+
+
+
+

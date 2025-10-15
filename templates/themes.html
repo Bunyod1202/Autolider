@@ -1,4 +1,4 @@
-{% load static %}
+{% load static text_filters %}
 <!doctype html>
 <html lang="en">
   <head>
@@ -9,10 +9,10 @@
       body { background: #f6f4fb; }
       .page-title { text-align: center; font-weight: 600; }
       .title-with-logo { display:flex; align-items:center; justify-content:center; gap:8px; }
-      .title-with-logo img.logo { height: 28px; object-fit: contain; border-radius: 4px; }
+      .title-with-logo img.logo { height: 28px; width:auto; object-fit: contain; border-radius: 4px; display:inline-block; }
       .theme-item { width: 100%; border: 0; outline: 0; text-align: left; background: #ede7ff; border-radius: 16px; padding: 12px 16px; }
       .theme-item:hover { background: #e4ddff; }
-      .theme-name { font-size: 16px; }
+      .theme-name { font-size: 16px; flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
       .theme-count { font-weight: 600; color: #3c3c3c; opacity: .8; }
     </style>
   </head>
@@ -35,9 +35,9 @@
                       formaction="/bot/themes/{{ theme.id }}/"
                       formmethod="post"
                     >
-                      <div class="d-flex align-items-center gap-2 flex-grow-1">
+                      <div class="d-flex align-items-center gap-2 flex-grow-1" style="min-width:0;">
                         <span class="text-muted">{{ forloop.counter }}.</span>
-                        <span class="theme-name text-truncate">{{ theme.name }}</span>
+                        <span class="theme-name">{{ theme.name|strip_num_prefix }}</span>
                       </div>
                       <span class="theme-count">{{ theme.quizzes_count }}</span>
                     </button>
