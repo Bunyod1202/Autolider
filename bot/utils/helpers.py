@@ -90,50 +90,67 @@ def get_constant(key):
 def sending_post(bot: TeleBot, message: types.Message, sender: User):
     total = 0
     users = list(User.objects.all())
+    
+    print(f"Xabar yuborish boshlandi. Foydalanuvchilar soni: {len(users)}")
+    
     for user in users:
         try:
+            print(f"Foydalanuvchiga yuborilmoqda: {user.telegram_id}")
+            
             if message.audio:
-                bot.send_audio(
+                result = bot.send_audio(
                     user.telegram_id,
                     message.audio.file_id,
                     caption=message.html_caption,
                     reply_markup=message.reply_markup,
-                    protect_content=True,
+                    protect_content=True,  # Endi ishlaydi!
                 )
+                print(f"Audio yuborildi: {result.message_id}")
+                
             elif message.voice:
-                bot.send_voice(
+                result = bot.send_voice(
                     user.telegram_id,
                     message.voice.file_id,
                     caption=message.html_caption,
                     reply_markup=message.reply_markup,
-                    protect_content=True,
+                    protect_content=True,  # Endi ishlaydi!
                 )
+                print(f"Voice yuborildi: {result.message_id}")
+                
             elif message.video:
-                bot.send_video(
+                result = bot.send_video(
                     user.telegram_id,
                     message.video.file_id,
                     caption=message.html_caption,
                     reply_markup=message.reply_markup,
-                    protect_content=True,
+                    protect_content=True,  # Endi ishlaydi!
                 )
+                print(f"Video yuborildi: {result.message_id}")
+                
             elif message.photo:
-                bot.send_photo(
+                result = bot.send_photo(
                     user.telegram_id,
                     message.photo[-1].file_id,
                     caption=message.html_caption,
                     reply_markup=message.reply_markup,
-                    protect_content=True,
+                    protect_content=True,  # Endi ishlaydi!
                 )
+                print(f"Photo yuborildi: {result.message_id}")
+                
             else:
-                bot.send_message(
+                result = bot.send_message(
                     user.telegram_id,
                     message.html_text,
                     reply_markup=message.reply_markup,
-                    protect_content=True,
+                    protect_content=True,  # Endi ishlaydi!
                 )
+                print(f"Message yuborildi: {result.message_id}")
+                
             total += 1
             sleep(0.05)
+            
         except ApiException as e:
+            print(f"Xato: {e}")
             error = str(e.args)
             if "deactivated" in error or "blocked by the user" in error:
                 user.is_active = False
@@ -141,11 +158,32 @@ def sending_post(bot: TeleBot, message: types.Message, sender: User):
                 continue
             else:
                 users.append(user)
-    bot.send_message(
-        sender.telegram_id,
-        sender.text.posting_end.format(
-            user_counts=len(users),
-            total=total
-        ),
-        protect_content=True,
-    )
+                
+                # Yakuniy xabar ham himoyalangan bo'ladi
+            bot.send_message(
+                sender.telegram_id,
+                sender.text.posting_end.format(
+                user_counts=len(users),
+                total=total
+                ),
+                protect_content=True,  # Endi ishlaydi!
+            )
+            print(f"Xabar yuborish tugadi. Muvaffaqiyatli yuborildi: {total}")
+    #         total += 1
+    #         sleep(0.05)
+    #     except ApiException as e:
+    #         error = str(e.args)
+    #         if "deactivated" in error or "blocked by the user" in error:
+    #             user.is_active = False
+    #             user.save()
+    #             continue
+    #         else:
+    #             users.append(user)
+    # bot.send_message(
+    #     sender.telegram_id,
+    #     sender.text.posting_end.format(
+    #         user_counts=len(users),
+    #         total=total
+    #     ),
+    #     protect_content=True,
+    # )
