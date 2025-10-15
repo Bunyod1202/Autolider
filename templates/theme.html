@@ -1,3 +1,4 @@
+{% load text_filters %}
 <!doctype html>
 <html lang="en">
   <head>
@@ -25,6 +26,58 @@
       }
       .scroll-top-btn.show { display: flex; }
       .scroll-top-btn svg { width: 20px; height: 20px; fill: currentColor; }
+
+      /* Unified pill buttons (back / start / continue) */
+      .btn-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 16px;
+        padding: 8px 14px;
+        min-height: 40px;
+        font-weight: 500;
+        font-size: 14px;
+        line-height: 1.2;
+        text-decoration: none;
+      }
+      .btn-pill--outline {
+        background: #ffffff;
+        border: 2px solid #d6d9e0;
+        color: #111;
+      }
+      .btn-pill--outline:hover { background: #f5f6f8; border-color: #cbd0d8; }
+      .btn-pill--primary {
+        background: #0d6efd;
+        border: 2px solid #0d6efd;
+        color: #fff;
+        box-shadow: 0 4px 14px rgba(13,110,253,0.25);
+      }
+      .btn-pill--primary:hover { background: #0b5ed7; border-color: #0b5ed7; }
+      .btn-icon { width: 18px; height: 18px; }
+
+
+      /* Empty state (no tests yet) */
+      .empty-state {
+        background: #ede7ff;
+        border-radius: 16px;
+        padding: 20px;
+        color: #5b5b5b;
+      }
+      .empty-state .emoji {
+        font-size: 28px;
+        line-height: 1;
+        margin-bottom: 8px;
+        display: inline-block;
+      }
+      .check-btn {
+        border-radius: 16px;
+      }
+      .back-btn {
+        background: #ffffff;
+        border: 2px solid #0b5ed7;
+        color: #111;
+        border-radius: 16px;
+      }
     </style>
   </head>
   <body>
@@ -32,36 +85,53 @@
       <div class="row">
         <div class="col-12">
           <div class="d-flex align-items-start justify-content-between mt-3">
-            <a href="/bot/themes/?user_id={{ user.id }}" class="btn btn-light btn-sm border rounded-pill px-3">← {{ user.text.back }}</a>
+            <a href="/bot/themes/?user_id={{ user.id }}" class="btn back-btn btn-light btn-sm  rounded-pill px-3"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_23_88)">
+<path d="M21 11H6.83L10.41 7.41L9 6L3 12L9 18L10.41 16.59L6.83 13H21V11Z" fill="#323232"/>
+</g>
+<defs>
+<clipPath id="clip0_23_88">
+<rect width="24" height="24" fill="white"/>
+</clipPath>
+</defs>
+</svg>
+ {{ user.text.back }}</a>
            
             <div class="text-end" style="min-width: 160px;">
               {% if user.is_active %}
-              <button id="btn-start-new" class="btn btn-primary btn-sm rounded-pill px-3" type="submit" form="form" formaction="/bot/test/" formmethod="post" onclick="onStartNewClick()">{{ user.text.start_testing }}</button>
-              <button id="btn-continue" class="btn btn-secondary btn-sm rounded-pill px-3 ms-1" type="submit" form="form" formaction="/bot/test/" formmethod="post" onclick="onContinueClick()" style="display:none">{{ user.text.continue_label|default:'Davom etish' }}</button>
+              <button id="btn-start-new" class="btn-pill btn-pill--primary" type="submit" form="form" formaction="/bot/test/" formmethod="post" onclick="onStartNewClick()">{{ user.text.start_testing }}</button>
+              <button id="btn-continue" class="btn-pill btn-pill--primary ms-2" type="submit" form="form" formaction="/bot/test/" formmethod="post" onclick="onContinueClick()" style="display:none">{{ user.text.continue_label|default:'Davom etish' }}</button>
               {% else %}
-              <button class="btn btn-primary btn-sm rounded-pill px-3" type="button" onclick="youAreNotActive()">{{ user.text.start_testing }}</button>
+              <button class="btn-pill btn-pill--primary" type="button" onclick="youAreNotActive()">{{ user.text.start_testing }}</button>
               {% endif %}
             </div>
           </div>
           <div class=" flex-grow-1" style="margin-top:-4px;">
-            <h1 class="page-title text-center m-0">{{ theme.name }}</h1>
+            <h1 class="page-title text-center m-0">{{ theme.name|strip_num_prefix }}</h1>
             <div class="text-muted">{{ user.text.total_quizzes_count }} {{ theme.quizzes_count }}</div>
           </div>
 
           <div class="mt-3">
             {% for test in tests %}
-              {% widthratio test.correct_answers theme.quizzes_count 100 as pct %}
+              {% with pct_str=test.correct_answers|percent_in_parens %}
               <div class="position-relative p-3 mb-3" style="background:#ede7ff;border-radius:16px;">
                 <div class="d-flex justify-content-between align-items-center">
                   <div class="d-flex align-items-center gap-2 text-muted" style="font-size:12px;">
                     <span style="width:6px;height:6px;background:#9d7cff;border-radius:50%;display:inline-block;"></span>
                     <span>ID{{ test.id }}</span>
                   </div>
-                  <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:52px;height:52px;border:4px solid #37c56b;color:#37c56b;font-weight:700;">{{ pct }}%</div>
+                  <div class="ring" data-correct="1" data-total="40">
+              <svg width="54" height="54" viewBox="0 0 54 54">
+                <circle class="bg" cx="27" cy="27" r="23" fill="none" stroke-width="6"/>
+                <circle class="fg" cx="27" cy="27" r="23" fill="none" stroke-width="6" stroke-linecap="round" stroke-dasharray="0 999" stroke-dashoffset="{{ pct_str }}"/>
+              </svg>
+              <div class="pct">{{ pct_str }}%</div>
+            </div>
+              {% endwith %}
                 </div>
                 <div class="mt-2" style="font-weight:600;">{{ user.text.test_result }}</div>
                 <div class="mt-2">
-                  <div class="bg-white rounded-pill px-3 py-2 mb-2">
+                  <div class="bg-white  check-btn px-3 py-2 mb-2">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <g clip-path="url(#clip0_36_159)">
                         <path d="M16.59 7.58L10 14.17L6.41 10.59L5 12L10 17L18 9L16.59 7.58ZM12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.58 20 4 16.42 4 12C4 7.58 7.58 4 12 4C16.42 4 20 7.58 20 12C20 16.42 16.42 20 12 20Z" fill="#27C840"/>
@@ -73,7 +143,7 @@
                         </defs>
                         </svg>
                          {{ test.correct_answers }}</div>
-                  <div class="bg-white rounded-pill px-3 py-2 mb-2">
+                  <div class="bg-white  check-btn px-3 py-2 mb-2">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <g clip-path="url(#clip0_36_153)">
                         <path d="M11.99 2C6.47 2 2 6.48 2 12C2 17.52 6.47 22 11.99 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 11.99 2ZM12 20C7.58 20 4 16.42 4 12C4 7.58 7.58 4 12 4C16.42 4 20 7.58 20 12C20 16.42 16.42 20 12 20Z" fill="#FEBC2F"/>
@@ -86,7 +156,7 @@
                         </defs>
                         </svg>
                          {{ test.spent_time }}</div>
-                  <div class="bg-white rounded-pill px-3 py-2">
+                  <div class="bg-white  check-btn px-3 py-2">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <g clip-path="url(#clip0_36_156)">
                         <path d="M20 3H19V1H17V3H7V1H5V3H4C2.9 3 2 3.9 2 5V21C2 22.1 2.9 23 4 23H20C21.1 23 22 22.1 22 21V5C22 3.9 21.1 3 20 3ZM20 21H4V8H20V21Z" fill="#956AF7"/>
@@ -101,11 +171,14 @@
                          {{ test.added_time }}</div>
                 </div>
                 <div class="mt-3">
-                  <button class="btn btn-primary w-100 rounded-pill" type="submit" form="form" formaction="/bot/test/{{ test.id }}/" formmethod="post">{{ user.text.see_more }}</button>
+                  <button class="btn btn-primary w-100 check-btn" type="submit" form="form" formaction="/bot/test/{{ test.id }}/" formmethod="post">{{ user.text.see_more }}</button>
                 </div>
               </div>
             {% empty %}
-              <div class="text-center text-muted mt-4">{{ user.text.tests_not_found }}</div>
+              <div class="empty-state text-center mt-3">
+                <div class="emoji">📄</div>
+                <div class="fw-semibold">{{ user.text.tests_not_found }}</div>
+              </div>
             {% endfor %}
           </div>
         </div>
@@ -248,3 +321,6 @@
     </script>
   </body>
 </html>
+
+
+
