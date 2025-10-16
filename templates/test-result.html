@@ -8,7 +8,20 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-
+ :root{
+        --bg: #f3f4f6;
+        --card: #eadfff;
+        --surface: #ffffff;
+        --text: #111827;
+        --muted: #6b7280;
+        --primary: #1d4ed8;
+        --primary-end: #2f6df8;
+        --success: #22c55e;
+        --warning: #f59e0b;
+        --accent: #8b5cf6;
+        --radius: 16px;
+        --shadow: 0 6px 20px rgba(0,0,0,0.08);
+      }
       body { background:#fff; }
       .header-pill { border-radius:999px; padding:6px 12px; }
       .page-title { text-align:center; font-weight:600; }
@@ -83,8 +96,8 @@
                     <div class="mt-2" style="font-weight:600;">{{ user.text.test_result }}</div>
                   </div>  
                   {% with pct_str=test.correct_answers|percent_in_parens %}
-                   <div class="ring"    data-correct="{{ test.correct_answers|correct_count }}" 
-                     data-total="{{ test.correct_answers|total_count }}">
+                   <div class="ring"    data-correct="14" 
+                     data-total="40">
                     <svg width="54" height="54" viewBox="0 0 54 54" style="transform: rotate(-90deg);">
                       <circle class="bg" cx="27" cy="27" r="23" fill="none" stroke-width="6" pathLength="100" stroke-dasharray="100 100" />
                       <circle class="fg" cx="27" cy="27" r="23" fill="none" stroke-width="6" stroke-linecap="round" pathLength="100" stroke-dasharray="100 100" stroke-dashoffset="70"/>
@@ -190,12 +203,8 @@
             catch(e){ window.scrollTo(0,0); }
           });
         })();
-        if(webApp){
-          webApp.expand();
-          try{ webApp.BackButton.show(); webApp.BackButton.onClick(goBack);}catch(e){}
-        }
-
-  (function(){
+     
+        (function(){
           const rings = document.querySelectorAll('.ring');
           rings.forEach(r => {
             const correct = parseFloat(r.getAttribute('data-correct')) || 0;
@@ -212,7 +221,10 @@
           });
         })();
 
-
+   if(webApp){
+          webApp.expand();
+          try{ webApp.BackButton.show(); webApp.BackButton.onClick(goBack);}catch(e){}
+        }
     </script>
   </body>
 </html>
