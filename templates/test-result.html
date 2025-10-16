@@ -37,6 +37,12 @@
         box-shadow: 0 6px 16px rgba(13,110,253,0.35);
         z-index: 1050;
       }
+      .back-btn {
+        background: #ffffff;
+        border: 2px solid #0b5ed7;
+        color: #111;
+        border-radius: 16px;
+      }
       .scroll-top-btn.show { display: flex; }
       .scroll-top-btn svg { width: 20px; height: 20px; fill: currentColor; }
       .ring{ position: relative; width: 54px; height: 54px; }
@@ -51,7 +57,18 @@
       <div class="row">
         <div class="col-12">
           <div class="d-flex align-items-center justify-content-between mt-3">
-            <button type="button" class="btn btn-light btn-sm border header-pill" onclick="goBack()">← {{ user.text.back }}</button>
+            <button type="button" class="btn btn-light btn-sm back-btn" onclick="goBack()">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_23_88)">
+<path d="M21 11H6.83L10.41 7.41L9 6L3 12L9 18L10.41 16.59L6.83 13H21V11Z" fill="#323232"/>
+</g>
+<defs>
+<clipPath id="clip0_23_88">
+<rect width="24" height="24" fill="white"/>
+</clipPath>
+</defs>
+</svg>
+              {{ user.text.back }}</button>
             <!-- <div style="width:90px;"></div> -->
           </div>
           <h1 class="page-title mb-2 m-0">{{ test.theme }}</h1>
@@ -91,7 +108,7 @@
                         </clipPath>
                         </defs>
                         </svg>
-                         {{ test.correct_answers}}</div>
+                         {{ test.correct_answers}}{{ test.correct_answers|correct_count}}/{{ test.correct_answers|total_count}}</div>
                   <div class="bg-white  check-btn px-3 py-2 mb-2">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <g clip-path="url(#clip0_36_153)">
