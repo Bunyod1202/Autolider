@@ -8,7 +8,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
 
-      body { background:#f6f4fb; }
+      body { background:#fff; }
       .header-pill { border-radius:999px; padding:6px 12px; }
       .page-title { text-align:center; font-weight:600; }
       .pill-row { background:#ffffff; border-radius:12px; padding:8px 12px; }
@@ -36,9 +36,22 @@
         box-shadow: 0 6px 16px rgba(13,110,253,0.35);
         z-index: 1050;
       }
+      .check-btn {
+        border-radius: 16px;
+      }
+      .back-btn {
+        background: #ffffff;
+        border: 2px solid #0b5ed7;
+        color: #111;
+        border-radius: 16px;
+      }
       .scroll-top-btn.show { display: flex; }
       .scroll-top-btn svg { width: 20px; height: 20px; fill: currentColor; }
-
+  .ring{ position: relative; width: 54px; height: 54px; }
+      .ring svg{ transform: rotate(-90deg); }
+      .ring .pct{ position: absolute; inset: 0; display: grid; place-items: center; font-weight: 700; color: var(--success); }
+      .ring .bg{ stroke: #e5e7eb; }
+      .ring .fg{ stroke: var(--success); transition: stroke-dashoffset .3s ease; }
     </style>
   </head>
   <body>
@@ -46,55 +59,77 @@
       <div class="row">
         <div class="col-12">
           <div class="d-flex align-items-center justify-content-between mt-3">
-            <button type="button" class="btn btn-light btn-sm border header-pill" onclick="goBack()">← {{ user.text.back }}</button>
-            <h1 class="page-title m-0">{{ test.theme }}</h1>
+            <button type="button" class="btn btn-light btn-sm  back-btn" onclick="goBack()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <g clip-path="url(#clip0_23_88)">
+<path d="M21 11H6.83L10.41 7.41L9 6L3 12L9 18L10.41 16.59L6.83 13H21V11Z" fill="#323232"/>
+              </g>
+              </svg>{{ user.text.back }}</button>
+
             <div style="width:90px;"></div>
           </div>
-
-          <div class="wrap-purple mt-3">
-            <div class="d-flex justify-content-between align-items-center">
-              <div class="d-flex align-items-center gap-2 text-muted" style="font-size:12px;">
-                <span style="width:6px;height:6px;background:#9d7cff;border-radius:50%;display:inline-block;"></span>
-                <span>ID{{ test.id }}</span>
-              </div>
-              <div class="percent-circle">{% widthratio test.correct_answers test.answers|length 100 %}%</div>
-            </div>
-            <div class="mt-2" style="font-weight:600;">{{ user.text.test_result }}</div>
-            <div class="mt-2">
-              <div class="pill-row mb-2"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <g clip-path="url(#clip0_37_723)">
-                <path d="M16.59 7.58L10 14.17L6.41 10.59L5 12L10 17L18 9L16.59 7.58ZM12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.58 20 4 16.42 4 12C4 7.58 7.58 4 12 4C16.42 4 20 7.58 20 12C20 16.42 16.42 20 12 20Z" fill="#27C840"/>
-                </g>
-                <defs>
-                <clipPath id="clip0_37_723">
-                <rect width="24" height="24" fill="white"/>
-                </clipPath>
-                </defs>
-                </svg>
-                 {{ test.correct_answers }}/{{ test.answers|length }}</div>
-              <div class="pill-row mb-2"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <g clip-path="url(#clip0_37_717)">
-                <path d="M11.99 2C6.47 2 2 6.48 2 12C2 17.52 6.47 22 11.99 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 11.99 2ZM12 20C7.58 20 4 16.42 4 12C4 7.58 7.58 4 12 4C16.42 4 20 7.58 20 12C20 16.42 16.42 20 12 20Z" fill="#FEBC2F"/>
-                <path d="M12.5 7H11V13L16.25 16.15L17 14.92L12.5 12.25V7Z" fill="#FEBC2F"/>
-                </g>
-                <defs>
-                <clipPath id="clip0_37_717">
-                <rect width="24" height="24" fill="white"/>
-                </clipPath>
-                </defs>
-                </svg>
-                 {{ test.spent_time }}</div>
-              <div class="pill-row"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <g clip-path="url(#clip0_37_720)">
-                <path d="M20 3H19V1H17V3H7V1H5V3H4C2.9 3 2 3.9 2 5V21C2 22.1 2.9 23 4 23H20C21.1 23 22 22.1 22 21V5C22 3.9 21.1 3 20 3ZM20 21H4V8H20V21Z" fill="#956AF7"/>
-                </g>
-                <defs>
-                <clipPath id="clip0_37_720">
-                <rect width="24" height="24" fill="white"/>
-                </clipPath>
-                </defs>
-                </svg>
-                 {{ test.added_time }}</div>
+                      <h1 class="page-title text-center m-0">{{ test.theme }}</h1>
+          <div class="position-relative p-3 mb-3" style="background:#ede7ff;border-radius:16px;">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                     <div class="d-flex align-items-center gap-2 text-muted" style="font-size:12px;">
+                    <span style="width:6px;height:6px;background:#9d7cff;border-radius:50%;display:inline-block;"></span>
+                    <span>ID{{ test.id }}</span>
+                  </div>
+                    <div class="mt-2" style="font-weight:600;">{{ user.text.test_result }}</div>
+                  </div>  
+                 
+                  <div class="ring" data-correct="{{ test.correct_answers|correct_count }}" data-total="{{ theme.quizzes_count }}">
+                    <svg width="54" height="54" viewBox="0 0 54 54" style="transform: rotate(-90deg);">
+                      <circle class="bg" cx="27" cy="27" r="23" fill="none" stroke-width="6" pathLength="100" stroke-dasharray="100 100" />
+                      <circle class="fg" cx="27" cy="27" r="23" fill="none" stroke-width="6" stroke-linecap="round" pathLength="100" stroke-dasharray="100 100" stroke-dashoffset="70"/>
+                    </svg>
+                    <div class="pct">{{ pct_str }}%</div>
+                  </div>
+            
+                {% endwith %}
+                </div>
+            
+                <div class="mt-2">
+                  <div class="bg-white  check-btn px-3 py-2 mb-2">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g clip-path="url(#clip0_36_159)">
+                        <path d="M16.59 7.58L10 14.17L6.41 10.59L5 12L10 17L18 9L16.59 7.58ZM12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.58 20 4 16.42 4 12C4 7.58 7.58 4 12 4C16.42 4 20 7.58 20 12C20 16.42 16.42 20 12 20Z" fill="#27C840"/>
+                        </g>
+                        <defs>
+                        <clipPath id="clip0_36_159">
+                        <rect width="24" height="24" fill="white"/>
+                        </clipPath>
+                        </defs>
+                        </svg>
+                         {{ test.correct_answers}}</div>
+                  <div class="bg-white  check-btn px-3 py-2 mb-2">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g clip-path="url(#clip0_36_153)">
+                        <path d="M11.99 2C6.47 2 2 6.48 2 12C2 17.52 6.47 22 11.99 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 11.99 2ZM12 20C7.58 20 4 16.42 4 12C4 7.58 7.58 4 12 4C16.42 4 20 7.58 20 12C20 16.42 16.42 20 12 20Z" fill="#FEBC2F"/>
+                        <path d="M12.5 7H11V13L16.25 16.15L17 14.92L12.5 12.25V7Z" fill="#FEBC2F"/>
+                        </g>
+                        <defs>
+                        <clipPath id="clip0_36_153">
+                        <rect width="24" height="24" fill="white"/>
+                        </clipPath>
+                        </defs>
+                        </svg>
+                         {{ test.spent_time }}</div>
+                  <div class="bg-white  check-btn px-3 py-2">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g clip-path="url(#clip0_36_156)">
+                        <path d="M20 3H19V1H17V3H7V1H5V3H4C2.9 3 2 3.9 2 5V21C2 22.1 2.9 23 4 23H20C21.1 23 22 22.1 22 21V5C22 3.9 21.1 3 20 3ZM20 21H4V8H20V21Z" fill="#956AF7"/>
+                        </g>
+                        <defs>
+                        <clipPath id="clip0_36_156">
+                        <rect width="24" height="24" fill="white"/>
+                        </clipPath>
+                        </defs>
+                        </svg>
+                        
+                         {{ test.added_time }}</div>
+                </div>
+              
             </div>
           </div>
 
@@ -106,7 +141,7 @@
               <h5 class="mb-3 text-center">{{ answer.quiz.question | safe }}</h5>
               {% for option in answer.quiz.options %}
                 <div class="option-btn mb-2 {% if option.id == answer.answer.id and not option.is_correct %}opt-danger{% elif option.is_correct %}opt-success{% else %}opt-light{% endif %}">
-                  <span class="option-index">{{ forloop.counter }}</span>
+                
                   <span class="flex-grow-1">{{ option.text }}</span>
                 </div>
               {% endfor %}
@@ -154,7 +189,22 @@
           webApp.expand();
           try{ webApp.BackButton.show(); webApp.BackButton.onClick(goBack);}catch(e){}
         }
-
+  (function(){
+          const rings = document.querySelectorAll('.ring');
+          rings.forEach(r => {
+            const correct = parseFloat(r.getAttribute('data-correct')) || 0;
+            const total = parseFloat(r.getAttribute('data-total')) || 0;
+            const pct = total > 0 ? Math.round((correct/total)*100) : 0;
+            const circle = r.querySelector('.fg');
+            const radius = 23; // matches r attribute
+            const C = 2 * Math.PI * radius;
+            circle.setAttribute('stroke-dasharray', C + ' ' + C);
+            const offset = C * (1 - pct/100);
+            circle.setAttribute('stroke-dashoffset', offset);
+            const label = r.querySelector('.pct');
+            if (label) label.textContent = pct + '%';
+          });
+        })();
 
 
 

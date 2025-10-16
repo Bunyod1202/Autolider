@@ -115,7 +115,7 @@ def theme_detail_view(request, theme_id: int):
                     'spent_time': test.spent_time,
                     'correct_answers': test.correct_answers,
                     'added_time': test.added_time.strftime('%Y-%m-%d %H:%M:%S'),
-                } for test in user.tests.filter(theme=theme)
+                } for test in user.tests.filter(theme=theme).order_by('-added_time')
             ],
         }
     )
@@ -217,6 +217,9 @@ def test_result_view(request, test_id: int):
             }
         }
     )
+
+
+
 
 
 
