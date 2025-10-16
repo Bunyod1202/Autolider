@@ -85,7 +85,7 @@
       <div class="row">
         <div class="col-12">
           <div class="d-flex align-items-start justify-content-between mt-3">
-            <a href="/bot/themes/?user_id={{ user.id }}" class="btn back-btn btn-light btn-sm  rounded-pill px-3"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <a href="/bot/themes/?user_id={{ user.id }}" class="btn back-btn btn-light btn-sm  check-btn px-3"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g clip-path="url(#clip0_23_88)">
 <path d="M21 11H6.83L10.41 7.41L9 6L3 12L9 18L10.41 16.59L6.83 13H21V11Z" fill="#323232"/>
 </g>
@@ -120,10 +120,10 @@
                     <span style="width:6px;height:6px;background:#9d7cff;border-radius:50%;display:inline-block;"></span>
                     <span>ID{{ test.id }}</span>
                   </div>
-                  <div class="ring" data-correct="1" data-total="40">
+                  <div class="ring" data-correct="{{ correct_count }}" data-total="{{ theme.quizzes_count }}">
               <svg width="54" height="54" viewBox="0 0 54 54">
                 <circle class="bg" cx="27" cy="27" r="23" fill="none" stroke-width="6"/>
-                <circle class="fg" cx="27" cy="27" r="23" fill="none" stroke-width="6" stroke-linecap="round" stroke-dasharray="0 999" stroke-dashoffset="{{ pct_str }}"/>
+                <circle class="fg" cx="27" cy="27" r="23" fill="none" stroke-width="6" stroke-linecap="round" stroke-dasharray="0 999" stroke-dashoffset="{{pct_str}}"/>
               </svg>
               <div class="pct">{{ pct_str }}%</div>
             </div>
@@ -142,7 +142,7 @@
                         </clipPath>
                         </defs>
                         </svg>
-                         {{ test.correct_answers }}</div>
+                         {{ test.correct_answers|correct_count }}</div>
                   <div class="bg-white  check-btn px-3 py-2 mb-2">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <g clip-path="url(#clip0_36_153)">
@@ -321,6 +321,7 @@
     </script>
   </body>
 </html>
+
 
 
 
