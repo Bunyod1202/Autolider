@@ -58,3 +58,17 @@ def complement_100(value):
         return f"{res:.1f}"
     except Exception:
         return 100
+
+
+@register.filter
+def total_count(value: str):
+    try:
+        s = str(value)
+        m = re.search(r'\d+\s*/\s*(\d+)', s) # captures number after the slash
+        if m:
+            return m.group(1)
+        # Fallback: second number in the string
+        nums = re.findall(r'\d+', s)
+        return nums[1] if len(nums) > 1 else (nums[0] if nums else '')
+    except Exception:
+        return ''
