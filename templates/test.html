@@ -103,7 +103,7 @@
     </div>
     <div class="fixed-bottom quiz-nav" style="background-color: #ffffff;">
         <div class="container py-3">
-            <div class="overflow-scroll d-flex">
+            <div id="quiz-nav" class="overflow-scroll d-flex">
                 {% for quiz in theme.quizzes %}
                 <button id="quiz-{{ quiz.id }}-btn" class="btn btn-light check-btn mx-1{% if forloop.first %} quiz-btn-active{% endif %}" onclick="goToQuiz({{ quiz.id }})">{{ forloop.counter }}</button>
                 {% endfor %}
@@ -181,7 +181,7 @@
             document.getElementsByClassName('quiz-btn-active')[0].classList.remove('quiz-btn-active');
             document.getElementById('quiz-' + quiz_id).classList.add('quiz-card-active');
             document.getElementById('quiz-' + quiz_id + '-btn').classList.add('quiz-btn-active');
-            persistState({ current_quiz_id: quiz_id });
+            persistState({ current_quiz_id: quiz_id });\n            centerActiveNav(quiz_id);
         }
 
         function goToNextQuiz(){
@@ -269,7 +269,7 @@
                         applySelection(qid, optId, ansId);
                     }
                 }
-                if(state.current_quiz_id){ goToQuiz(state.current_quiz_id); }
+                if(state.current_quiz_id){ goToQuiz(state.current_quiz_id); } else { centerActiveNav(getCurrentQuizId()); }
                 // If all questions are already answered, auto-submit to analysis
                 if(Array.isArray(selected_options) && selected_options.length === quizzes_count){
                     clearState();
