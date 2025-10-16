@@ -8,7 +8,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
       <style>
-
           body { background: #fff; }
           .header-pill { border-radius: 16px; padding: 6px 12px; }
           .timer-pill { background:#0d6efd; color:#fff; border-radius:16px; padding:6px 12px; font-weight:600; }
@@ -32,9 +31,6 @@
           }
           .quiz-card-active {
               display: block!important;
-          }
-          .quiz-card-wrap {
-            height: 100%;
           }
 
           .success { background-color:#22c55e!important; border-color:#22c55e!important; color:#fff!important; }
@@ -77,11 +73,11 @@
             overflow-x: auto;
             scroll-behavior: smooth;
             padding: 10px 0;
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
+            -ms-overflow-style: none;
+            scrollbar-width: none;
           }
           .quiz-nav-scroll::-webkit-scrollbar {
-            display: none; /* Chrome, Safari and Opera */
+            display: none;
           }
 
           /* Screenshot warning modal */
@@ -111,7 +107,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.9);
             color: white;
             display: none;
             justify-content: center;
@@ -120,37 +116,42 @@
             font-size: 24px;
             text-align: center;
             padding: 20px;
+            flex-direction: column;
+          }
+          .screenshot-overlay h3 {
+            color: #ff6b6b;
+            margin-bottom: 20px;
           }
       </style>
   </head>
   <body>
     <!-- Screenshot overlay -->
     <div class="screenshot-overlay" id="screenshotOverlay">
-      <div>
-        <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
-        <h3>Skrinshot qilish taqiqlangan!</h3>
-        <p>Test natijalari sizning shaxsiy profilingizga saqlanadi.</p>
-      </div>
+      <div style="font-size: 64px; margin-bottom: 20px;">🚫</div>
+      <h3>Skrinshot qilish taqiqlangan!</h3>
+      <p style="font-size: 18px; margin-bottom: 10px;">Test tizimi himoyalangan</p>
+      <p style="font-size: 16px; opacity: 0.8;">Bu harakat qayd etildi</p>
     </div>
 
     <div class="fixed-top" id="header" style="background-color: #ffffff;">
         <div class="container">
             <div class="d-flex align-items-center justify-content-between py-3">
-                <button type="button" class="btn btn-light back-btn btn-sm check-btn header-pill" onclick="onBackClick()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g clip-path="url(#clip0_23_88)">
-<path d="M21 11H6.83L10.41 7.41L9 6L3 12L9 18L10.41 16.59L6.83 13H21V11Z" fill="#323232"/>
-</g>
-<defs>
-<clipPath id="clip0_23_88">
-<rect width="24" height="24" fill="white"/>
-</clipPath>
-</defs>
-</svg>
- {{ user.text.back }}</button>
-              
+                <button type="button" class="btn btn-light back-btn btn-sm check-btn header-pill" onclick="onBackClick()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g clip-path="url(#clip0_23_88)">
+                        <path d="M21 11H6.83L10.41 7.41L9 6L3 12L9 18L10.41 16.59L6.83 13H21V11Z" fill="#323232"/>
+                        </g>
+                        <defs>
+                        <clipPath id="clip0_23_88">
+                        <rect width="24" height="24" fill="white"/>
+                        </clipPath>
+                        </defs>
+                    </svg>
+                    {{ user.text.back }}
+                </button>
                 <span id="timer" class="timer-pill">00:00:00</span>
             </div>
-              <div class="title-center  mb-1">{{ theme.name |strip_num_prefix}}</div>
+            <div class="title-center mb-1">{{ theme.name |strip_num_prefix}}</div>
         </div>
     </div>
    
@@ -171,6 +172,7 @@
             </div>
     {% endfor %}
     </div>
+
     <div class="fixed-bottom quiz-nav" style="background-color: #ffffff;">
         <div class="container py-3">
             <div class="quiz-nav-scroll" id="quizNavScroll">
@@ -180,6 +182,7 @@
             </div>
         </div>
     </div>
+
     <form class="d-none" id="form" action="/bot/save-test/" method="post">
         {% csrf_token %}
         <input type="hidden" name="user_id" value="{{ user.id }}"/>
@@ -237,6 +240,9 @@
         // Screenshot detection variables
         let screenshotWarningShown = false;
         let lastVisibilityChange = Date.now();
+        let volumeButtonsPressed = false;
+        let powerButtonPressed = false;
+        let buttonPressTimer = null;
 
         function startTimer(){
             if(timerId !== null) return;
@@ -297,7 +303,6 @@
             }
         }
 
-        // Center the active button in navigation
         function centerActiveButton() {
             const navScroll = document.getElementById('quizNavScroll');
             const activeButton = document.querySelector('.quiz-btn-active');
@@ -408,137 +413,208 @@
             } catch(e) {}
         }
 
-        // TELEFON UCHUN SKRINSHOT HIMOYASI
-        function initMobileScreenshotProtection() {
-            // 1. Visibility change detection - telefonlarda skrinshot sahifani blur qiladi
+        // KUCHLI TELEFON SKRINSHOT HIMOYASI
+        function initAdvancedScreenshotProtection() {
+            // 1. Hardware button combination detection
+            let volumeDownPressed = false;
+            let volumeUpPressed = false;
+            let powerPressed = false;
+            let combinationTimer = null;
+
+            // Hardware button event listeners
+            document.addEventListener('keydown', function(e) {
+                switch(e.key) {
+                    case 'VolumeDown':
+                        volumeDownPressed = true;
+                        checkButtonCombination();
+                        break;
+                    case 'VolumeUp':
+                        volumeUpPressed = true;
+                        checkButtonCombination();
+                        break;
+                    case 'Power':
+                        powerPressed = true;
+                        checkButtonCombination();
+                        break;
+                }
+                
+                // Clear flags after 2 seconds
+                if (combinationTimer) clearTimeout(combinationTimer);
+                combinationTimer = setTimeout(() => {
+                    volumeDownPressed = false;
+                    volumeUpPressed = false;
+                    powerPressed = false;
+                }, 2000);
+            });
+
+            document.addEventListener('keyup', function(e) {
+                switch(e.key) {
+                    case 'VolumeDown':
+                        volumeDownPressed = false;
+                        break;
+                    case 'VolumeUp':
+                        volumeUpPressed = false;
+                        break;
+                    case 'Power':
+                        powerPressed = false;
+                        break;
+                }
+            });
+
+            function checkButtonCombination() {
+                // Volume Down + Power (Android)
+                if ((volumeDownPressed && powerPressed) || 
+                    (volumeUpPressed && powerPressed) ||
+                    // Volume Down + Volume Up (some devices)
+                    (volumeDownPressed && volumeUpPressed)) {
+                    triggerScreenshotProtection();
+                }
+            }
+
+            // 2. Page visibility and blur detection
             document.addEventListener('visibilitychange', function() {
                 if (document.hidden) {
                     const now = Date.now();
-                    // Agar tez orada visibility o'zgarsa, bu skrinshot bo'lishi mumkin
-                    if (now - lastVisibilityChange < 1000) {
-                        showScreenshotWarning();
+                    if (now - lastVisibilityChange < 500) {
+                        triggerScreenshotProtection();
                     }
                     lastVisibilityChange = now;
                 }
             });
 
-            // 2. Page blur/focus events
             window.addEventListener('blur', function() {
                 setTimeout(() => {
                     if (!document.hasFocus()) {
-                        showScreenshotWarning();
+                        triggerScreenshotProtection();
                     }
+                }, 50);
+            });
+
+            // 3. Resize and orientation changes
+            let resizeTimer;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    triggerScreenshotProtection();
                 }, 100);
             });
 
-            // 3. Resize detection - ba'zi skrinshot app'lari o'lchamni o'zgartiradi
-            let lastWidth = window.innerWidth;
-            let lastHeight = window.innerHeight;
-            window.addEventListener('resize', function() {
-                if (window.innerWidth !== lastWidth || window.innerHeight !== lastHeight) {
-                    showScreenshotOverlay();
-                    setTimeout(hideScreenshotOverlay, 2000);
-                }
-                lastWidth = window.innerWidth;
-                lastHeight = window.innerHeight;
-            });
-
-            // 4. Touch manipulation detection
-            let touchStartTime = 0;
+            // 4. Multi-touch detection (3+ fingers)
             document.addEventListener('touchstart', function(e) {
-                touchStartTime = Date.now();
-                // Agar 3ta yoki undan ko'p barmoq bilan bosilsa
                 if (e.touches.length >= 3) {
-                    showScreenshotWarning();
+                    triggerScreenshotProtection();
                 }
             });
 
-            document.addEventListener('touchend', function(e) {
-                // Uzoq bosib turish
-                if (Date.now() - touchStartTime > 2000) {
-                    showScreenshotWarning();
-                }
+            // 5. Prevent context menu and text selection
+            document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                triggerScreenshotProtection();
+                return false;
             });
 
-            // 5. Prevent text selection
             document.addEventListener('selectstart', function(e) {
                 e.preventDefault();
                 return false;
             });
 
-            // 6. Key combinations for mobile browsers
-            document.addEventListener('keydown', function(e) {
-                // Volume buttons + power button combination
-                if (e.key === 'VolumeDown' || e.key === 'VolumeUp' || e.key === 'Power') {
-                    showScreenshotOverlay();
-                    setTimeout(hideScreenshotOverlay, 3000);
-                }
-            });
-
-            // 7. Periodic screenshot detection
+            // 6. Periodic security checks
             setInterval(() => {
-                // Check for unusual window properties
-                if (window.outerHeight - window.innerHeight > 200 || 
-                    window.outerWidth - window.innerWidth > 200) {
-                    showScreenshotWarning();
+                // Check for unusual window state
+                if (window.outerHeight - window.innerHeight > 300 || 
+                    window.outerWidth - window.innerWidth > 300) {
+                    triggerScreenshotProtection();
                 }
-            }, 1000);
+            }, 500);
 
-            // 8. CSS protection - make content hard to screenshot
+            // 7. Add visual protection
+            addVisualProtection();
+        }
+
+        function addVisualProtection() {
+            // Add protective overlay that appears in screenshots
             const style = document.createElement('style');
             style.textContent = `
+                .anti-screenshot::before {
+                    content: 'TEST HIMOYALANGAN';
+                    position: fixed;
+                    top: 10px;
+                    left: 10px;
+                    background: rgba(255,0,0,0.8);
+                    color: white;
+                    padding: 5px 10px;
+                    border-radius: 5px;
+                    font-size: 12px;
+                    z-index: 10000;
+                    pointer-events: none;
+                }
+                
                 @media screen and (max-width: 768px) {
-                    body::before {
+                    body::after {
                         content: '';
                         position: fixed;
                         top: 0;
                         left: 0;
                         width: 100%;
                         height: 100%;
-                        background: linear-gradient(45deg, transparent 95%, rgba(255,255,255,0.1) 95%),
-                                    linear-gradient(-45deg, transparent 95%, rgba(255,255,255,0.1) 95%);
-                        background-size: 20px 20px;
+                        background: repeating-linear-gradient(
+                            45deg,
+                            transparent,
+                            transparent 10px,
+                            rgba(255,0,0,0.05) 10px,
+                            rgba(255,0,0,0.05) 20px
+                        );
                         pointer-events: none;
                         z-index: 9998;
-                        opacity: 0.1;
                     }
                 }
             `;
             document.head.appendChild(style);
+            
+            // Add anti-screenshot class to body
+            document.body.classList.add('anti-screenshot');
+        }
+
+        function triggerScreenshotProtection() {
+            if (screenshotWarningShown) return;
+            
+            screenshotWarningShown = true;
+            
+            // Show aggressive overlay immediately
+            showScreenshotOverlay();
+            
+            // Show modal warning
+            setTimeout(() => {
+                const modal = new bootstrap.Modal(document.getElementById('screenshotModal'));
+                modal.show();
+            }, 500);
+            
+            // Log the attempt (you can send this to your server)
+            console.log('Screenshot attempt detected at:', new Date().toISOString());
+            
+            // Reset flag after 5 seconds
+            setTimeout(() => {
+                hideScreenshotOverlay();
+                screenshotWarningShown = false;
+            }, 5000);
+
+            // Reset when modal is closed
+            document.getElementById('screenshotModal').addEventListener('hidden.bs.modal', function() {
+                screenshotWarningShown = false;
+            });
         }
 
         function showScreenshotOverlay() {
             const overlay = document.getElementById('screenshotOverlay');
             overlay.style.display = 'flex';
+            
+            // Add some animation
+            overlay.style.animation = 'fadeIn 0.3s ease-in';
         }
 
         function hideScreenshotOverlay() {
             const overlay = document.getElementById('screenshotOverlay');
             overlay.style.display = 'none';
-        }
-
-        function showScreenshotWarning() {
-            if (screenshotWarningShown) return;
-            
-            screenshotWarningShown = true;
-            
-            // Overlay ko'rsatish
-            showScreenshotOverlay();
-            
-            // Modal ko'rsatish
-            const modal = new bootstrap.Modal(document.getElementById('screenshotModal'));
-            modal.show();
-            
-            // 3 sekunddan keyin overlay yashirish
-            setTimeout(() => {
-                hideScreenshotOverlay();
-                screenshotWarningShown = false;
-            }, 3000);
-
-            // Modal yopilganda flag reset
-            document.getElementById('screenshotModal').addEventListener('hidden.bs.modal', function() {
-                screenshotWarningShown = false;
-            });
         }
 
         // Back handling
@@ -571,8 +647,8 @@
         // Telegram native back button
         if (webApp) { try { webApp.BackButton.show(); webApp.BackButton.onClick(onBackClick); } catch(e) {} }
 
-        // Initialize mobile screenshot protection
-        initMobileScreenshotProtection();
+        // Initialize advanced screenshot protection
+        initAdvancedScreenshotProtection();
 
         // Restore previous state if any
         restoreState();
@@ -605,6 +681,16 @@
         })();
 
         if (webApp) { try { webApp.enableClosingConfirmation(); } catch(e) {} }
+
+        // Add CSS animation for overlay
+        const animationStyle = document.createElement('style');
+        animationStyle.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+        `;
+        document.head.appendChild(animationStyle);
     </script>
   </body>
 </html>
