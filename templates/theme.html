@@ -148,10 +148,10 @@
                       <circle class="bg" cx="27" cy="27" r="23" fill="none" stroke-width="6"/>
                       <circle class="fg" cx="27" cy="27" r="23" fill="none" stroke-width="6" stroke-linecap="round" stroke-dasharray="0 999" stroke-dashoffset="{{ pct_str }}"/>
                     </svg>
-                    <div class="pct">{{ pct_str }}%</div>
+                    <div class="pct">{{ pct_str }}%{{ correct_count }}/{{ theme.quizzes_count }}</div>
                   </div>
-              </div>
-              {% endwith %}
+            
+                {% endwith %}
                 </div>
             
                 <div class="mt-2">
