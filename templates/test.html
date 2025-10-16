@@ -85,7 +85,6 @@
    
     <div class="container" id="body" style="margin-bottom: 70px;">
     {% for quiz in theme.quizzes %}
-        <div class="quiz-card-wrap"  id="quiz-{{ quiz.id }}">
             <div class="card_test d-none{% if forloop.first %} quiz-card-active{% endif %}" id="quiz-{{ quiz.id }}" data-answer-id="{{ quiz.answer.id }}">
               <div class="quiz-wrap">
                 {% if quiz.image_url %}
@@ -100,7 +99,6 @@
                 {% endfor %}
               </div>
             </div>
-    </div>
     {% endfor %}
     </div>
     <div class="fixed-bottom quiz-nav" style="background-color: #ffffff;">
@@ -238,7 +236,7 @@
         }
 
         function getCurrentQuizId(){
-            const active = document.getElementsByClassName('quiz-card-wrap')[0];
+            const active = document.getElementsByClassName('quiz-card-active')[0];
             if(!active) return null;
             const id = active.id.replace('quiz-','');
             return parseInt(id);
