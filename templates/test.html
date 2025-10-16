@@ -61,39 +61,40 @@
     <div class="fixed-top" id="header" style="background-color: #ffffff;">
         <div class="container">
             <div class="d-flex align-items-center justify-content-between py-3">
-                <button type="button" class="btn btn-light back-btn btn-sm check-btn header-pill" onclick="onBackClick()"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g clip-path="url(#clip0_23_88)">
-<path d="M21 11H6.83L10.41 7.41L9 6L3 12L9 18L10.41 16.59L6.83 13H21V11Z" fill="#323232"/>
-</g>
-<defs>
-<clipPath id="clip0_23_88">
-<rect width="24" height="24" fill="white"/>
-</clipPath>
-</defs>
-</svg>
- {{ user.text.back }}</button>
-              
+                <button type="button" class="btn btn-light back-btn btn-sm check-btn header-pill" onclick="onBackClick()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g clip-path="url(#clip0_23_88)">
+                            <path d="M21 11H6.83L10.41 7.41L9 6L3 12L9 18L10.41 16.59L6.83 13H21V11Z" fill="#323232"/>
+                        </g>
+                        <defs>
+                            <clipPath id="clip0_23_88">
+                                <rect width="24" height="24" fill="white"/>
+                            </clipPath>
+                        </defs>
+                    </svg>
+                    {{ user.text.back }}
+                </button>
                 <span id="timer" class="timer-pill">00:00:00</span>
             </div>
-              <div class="title-center  mb-1">{{ theme.name|strip_num_prefix }}</div>
+            <div class="title-center  mb-1">{{ theme.name|strip_num_prefix }}</div>
         </div>
     </div>
    
     <div class="container" id="body" style="margin-bottom: 70px;">
     {% for quiz in theme.quizzes %}
         <div class="card_test d-none{% if forloop.first %} quiz-card-active{% endif %}" id="quiz-{{ quiz.id }}" data-answer-id="{{ quiz.answer.id }}">
-          <div class="quiz-wrap">
+            <div class="quiz-wrap">
             {% if quiz.image_url %}
-            <img class="card-img-top mb-3" style="border-radius:12px;" src="{{ quiz.image_url }}" alt="{{ quiz.question }}">
-            {% endif %}
-            <h5 class="mb-3 text-center">{{ quiz.question | safe }}</h5>
-            {% for option in quiz.options %}
-              <button id="quiz-option-{{ option.id }}" type="button" class="btn btn-light my-2 option-btn" data-quiz-id="{{ quiz.id }}" data-option-id="{{ option.id }}" onclick="selectQuizOption({{ quiz.id }}, {{ option.id}}, {{quiz.answer.id }});">
+                <img class="card-img-top mb-3" style="border-radius:12px;" src="{{ quiz.image_url }}" alt="{{ quiz.question }}">
+                {% endif %}
+                <h5 class="mb-3 text-center">{{ quiz.question | safe }}</h5>
+                {% for option in quiz.options %}
+                <button id="quiz-option-{{ option.id }}" type="button" class="btn btn-light my-2 option-btn" data-quiz-id="{{ quiz.id }}" data-option-id="{{ option.id }}" onclick="selectQuizOption({{ quiz.id }}, {{ option.id}}, {{quiz.answer.id }});">
                 <!-- <span class="option-index">{{ forloop.counter }}</span> -->
-                <span class="flex-grow-1">{{ option.text }}</span>
-              </button>
+                    <span class="flex-grow-1">{{ option.text }}</span>
+                </button>
             {% endfor %}
-          </div>
+            </div>
         </div>
     {% endfor %}
     </div>
