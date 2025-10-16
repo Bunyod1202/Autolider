@@ -59,6 +59,19 @@
           .btn-soft-secondary:hover { background:#cfcfcf; color:#222; }
           .btn-soft-danger { background:#ff6b6b; color:#fff; border:0; }
           .btn-soft-danger:hover { background:#ff5252; color:#fff; }
+          
+          /* Navigation scroll improvements */
+          .quiz-nav-scroll {
+            display: flex;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            padding: 10px 0;
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+          }
+          .quiz-nav-scroll::-webkit-scrollbar {
+            display: none; /* Chrome, Safari and Opera */
+          }
       </style>
   </head>
   <body>
@@ -103,7 +116,7 @@
     </div>
     <div class="fixed-bottom quiz-nav" style="background-color: #ffffff;">
         <div class="container py-3">
-            <div class="overflow-scroll d-flex">
+            <div class="quiz-nav-scroll" id="quizNavScroll">
                 {% for quiz in theme.quizzes %}
                 <button id="quiz-{{ quiz.id }}-btn" class="btn btn-light check-btn mx-1{% if forloop.first %} quiz-btn-active{% endif %}" onclick="goToQuiz({{ quiz.id }})">{{ forloop.counter }}</button>
                 {% endfor %}
@@ -181,6 +194,10 @@
             document.getElementsByClassName('quiz-btn-active')[0].classList.remove('quiz-btn-active');
             document.getElementById('quiz-' + quiz_id).classList.add('quiz-card-active');
             document.getElementById('quiz-' + quiz_id + '-btn').classList.add('quiz-btn-active');
+            
+            // Center the active button
+            centerActiveButton();
+            
             persistState({ current_quiz_id: quiz_id });
         }
 
@@ -199,6 +216,27 @@
             const idx = quizIds.indexOf(currentId);
             if(idx > 0){
                 goToQuiz(quizIds[idx - 1]);
+            }
+        }
+
+        // Center the active button in navigation
+        function centerActiveButton() {
+            const navScroll = document.getElementById('quizNavScroll');
+            const activeButton = document.querySelector('.quiz-btn-active');
+            
+            if (activeButton && navScroll) {
+                const containerWidth = navScroll.offsetWidth;
+                const buttonOffset = activeButton.offsetLeft;
+                const buttonWidth = activeButton.offsetWidth;
+                
+                // Calculate scroll position to center the button
+                const scrollPosition = buttonOffset - (containerWidth / 2) + (buttonWidth / 2);
+                
+                // Smoothly scroll to center the active button
+                navScroll.scrollTo({
+                    left: scrollPosition,
+                    behavior: 'smooth'
+                });
             }
         }
 
@@ -269,7 +307,11 @@
                         applySelection(qid, optId, ansId);
                     }
                 }
-                if(state.current_quiz_id){ goToQuiz(state.current_quiz_id); }
+                if(state.current_quiz_id){ 
+                    goToQuiz(state.current_quiz_id);
+                    // Center the active button after restoring state
+                    setTimeout(centerActiveButton, 100);
+                }
                 // If all questions are already answered, auto-submit to analysis
                 if(Array.isArray(selected_options) && selected_options.length === quizzes_count){
                     clearState();
@@ -326,6 +368,9 @@
 
         // Restore previous state if any
         restoreState();
+
+        // Center active button on window resize
+        window.addEventListener('resize', centerActiveButton);
 
         // Swipe navigation between quizzes (mobile)
         (function(){
