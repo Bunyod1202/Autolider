@@ -115,7 +115,7 @@ def theme_detail_view(request, theme_id: int):
                     'spent_time': test.spent_time,
                     'correct_answers': test.correct_answers,
                     'added_time': test.added_time.strftime('%Y-%m-%d %H:%M:%S'),
-                } for test in user.tests.filter(theme=theme).order_by('-added_time')
+                } for test in user.tests.filter(theme=theme)
             ],
         }
     )
@@ -155,8 +155,7 @@ def test_view(request):
                 },
             }
         )
-    # Preserve context on redirect so view can render for this user
-    return redirect(f"/bot/themes/?user_id={user.id}")
+    return redirect('/bot/themes/')
 
 
 @csrf_exempt
@@ -166,17 +165,8 @@ def save_test_view(request):
     refresh_user_active_status(user)
     if user.is_active:
         theme: Theme = Theme.objects.get(id=request.POST.get('theme_id'))
-        # Defensive parsing against empty/invalid payloads
-        try:
-            spent_seconds = int(request.POST.get('spent_seconds', 0) or 0)
-        except Exception:
-            spent_seconds = 0
-        raw_selected = (request.POST.get('selected_options', '') or '').strip()
-        try:
-            selected_ids = [int(x) for x in raw_selected.split(',') if x.strip().isdigit()]
-        except Exception:
-            selected_ids = []
-        selected_options = Option.objects.filter(id__in=selected_ids)
+        spent_seconds = int(request.POST.get('spent_seconds', 0))
+        selected_options = Option.objects.filter(id__in=list(map(int, request.POST.get('selected_options', '').split(','))))
         test: Test = Test.objects.create(
             user=user,
             theme=theme,
@@ -186,7 +176,7 @@ def save_test_view(request):
         )
         test.selected_options.add(*selected_options)
         return test_result_view(request, test.id)
-    return redirect(f"/bot/themes/?user_id={user.id}")
+    return redirect('/bot/themes/')
 
 
 @csrf_exempt
@@ -227,12 +217,6 @@ def test_result_view(request, test_id: int):
             }
         }
     )
-
-
-
-
-
-
 
 
 
