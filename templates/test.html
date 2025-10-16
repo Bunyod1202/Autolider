@@ -21,11 +21,14 @@
           .quiz-card-active {
               display: block!important;
           }
-
-          .quiz-btn-active { background-color:#6b7280!important; border-color:#6b7280!important; color:#fff!important; }
+          .quiz-card-wrap {
+            height: 100%;
+          }
+          /* .quiz-btn-active { background-color:#6b7280!important; border-color:#6b7280!important; color:#fff!important; } */
 
           .success { background-color:#22c55e!important; border-color:#22c55e!important; color:#fff!important; }
           .danger  { background-color:#ef4444!important; border-color:#ef4444!important; color:#fff!important; }
+          .quiz-btn-active { background-color:#6b7280!important; border-color:#6b7280!important; color:#fff!important; }
           .check-btn {
             border-radius: 16px;
           }
@@ -82,20 +85,22 @@
    
     <div class="container" id="body" style="margin-bottom: 70px;">
     {% for quiz in theme.quizzes %}
-        <div class="card_test d-none{% if forloop.first %} quiz-card-active{% endif %}" id="quiz-{{ quiz.id }}" data-answer-id="{{ quiz.answer.id }}">
-          <div class="quiz-wrap">
-            {% if quiz.image_url %}
-            <img class="card-img-top mb-3" style="border-radius:12px;" src="{{ quiz.image_url }}" alt="{{ quiz.question }}">
-            {% endif %}
-            <h5 class="mb-3 text-center">{{ quiz.question | safe }}</h5>
-            {% for option in quiz.options %}
-              <button id="quiz-option-{{ option.id }}" type="button" class="btn btn-light my-2 option-btn" data-quiz-id="{{ quiz.id }}" data-option-id="{{ option.id }}" onclick="selectQuizOption({{ quiz.id }}, {{ option.id}}, {{quiz.answer.id }});">
-                <!-- <span class="option-index">{{ forloop.counter }}</span> -->
-                <span class="flex-grow-1">{{ option.text }}</span>
-              </button>
-            {% endfor %}
-          </div>
-        </div>
+        <div class="quiz-card-wrap"  id="quiz-{{ quiz.id }}">
+            <div class="card_test d-none{% if forloop.first %} quiz-card-active{% endif %}" id="quiz-{{ quiz.id }}" data-answer-id="{{ quiz.answer.id }}">
+              <div class="quiz-wrap">
+                {% if quiz.image_url %}
+                <img class="card-img-top mb-3" style="border-radius:12px;" src="{{ quiz.image_url }}" alt="{{ quiz.question }}">
+                {% endif %}
+                <h5 class="mb-3 text-center">{{ quiz.question | safe }}</h5>
+                {% for option in quiz.options %}
+                  <button id="quiz-option-{{ option.id }}" type="button" class="btn btn-light my-2 option-btn" data-quiz-id="{{ quiz.id }}" data-option-id="{{ option.id }}" onclick="selectQuizOption({{ quiz.id }}, {{ option.id}}, {{quiz.answer.id }});">
+                    <!-- <span class="option-index">{{ forloop.counter }}</span> -->
+                    <span class="flex-grow-1">{{ option.text }}</span>
+                  </button>
+                {% endfor %}
+              </div>
+            </div>
+    </div>
     {% endfor %}
     </div>
     <div class="fixed-bottom quiz-nav" style="background-color: #ffffff;">
@@ -233,7 +238,7 @@
         }
 
         function getCurrentQuizId(){
-            const active = document.getElementsByClassName('quiz-card-active')[0];
+            const active = document.getElementsByClassName('quiz-card-wrap')[0];
             if(!active) return null;
             const id = active.id.replace('quiz-','');
             return parseInt(id);
