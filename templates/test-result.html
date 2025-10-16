@@ -1,4 +1,4 @@
-<!doctype html>
+{% load text_filters %}`n<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
@@ -79,10 +79,10 @@
                     <div class="mt-2" style="font-weight:600;">{{ user.text.test_result }}</div>
                   </div>  
                  
-                  <div class="ring" data-correct="{{ test.correct_answers|correct_count }}" data-total="{{ theme.quizzes_count }}">
+                  <div class="ring" data-correct="{{ test.correct_answers|correct_count }}" data-total="{{ test.answers|length }}">
                     <svg width="54" height="54" viewBox="0 0 54 54" style="transform: rotate(-90deg);">
                       <circle class="bg" cx="27" cy="27" r="23" fill="none" stroke-width="6" pathLength="100" stroke-dasharray="100 100" />
-                      <circle class="fg" cx="27" cy="27" r="23" fill="none" stroke-width="6" stroke-linecap="round" pathLength="100" stroke-dasharray="100 100" stroke-dashoffset="70"/>
+                      <circle class="fg" cx="27" cy="27" r="23" fill="none" stroke-width="6" stroke-linecap="round" pathLength="100" stroke-dasharray="100 100" />
                     </svg>
                     <div class="pct">{{ pct_str }}%</div>
                   </div>
@@ -212,3 +212,4 @@
     </script>
   </body>
 </html>
+
