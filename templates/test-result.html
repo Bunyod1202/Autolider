@@ -55,7 +55,7 @@
             <!-- <div style="width:90px;"></div> -->
           </div>
           <h1 class="page-title mb-2 m-0">{{ test.theme }}</h1>
-
+% with pct_str=test.correct_answers|percent_in_parens %}
          <div class="position-relative p-3 mb-3" style="background:#ede7ff;border-radius:16px;">
                 <div class="d-flex justify-content-between align-items-center">
                   <div>
