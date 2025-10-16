@@ -29,3 +29,20 @@ def percent_in_parens(value: str):
         return f"{v:.1f}"
     except Exception:
         return ''
+
+
+@register.filter
+def correct_count(value: str):
+    """Extract the first integer (numerator) before a slash from strings like
+    '14/40 savoldan (35.0%)' and return it as a string. Falls back to the
+    first integer found if no slash is present.
+    """
+    try:
+        s = str(value)
+        m = re.match(r"\s*(\d+)\s*/", s)
+        if m:
+            return m.group(1)
+        m2 = re.search(r"\d+", s)
+        return m2.group(0) if m2 else ''
+    except Exception:
+        return ''
