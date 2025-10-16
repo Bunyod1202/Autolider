@@ -9,7 +9,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
 
-      body { background:#f6f4fb; }
+      body { background:#fff; }
       .header-pill { border-radius:999px; padding:6px 12px; }
       .page-title { text-align:center; font-weight:600; }
       .pill-row { background:#ffffff; border-radius:12px; padding:8px 12px; }
@@ -45,7 +45,7 @@
       }
       .scroll-top-btn.show { display: flex; }
       .scroll-top-btn svg { width: 20px; height: 20px; fill: currentColor; }
-      .ring{ position: relative; width: 54px; height: 54px; }
+    .ring{ position: relative; width: 54px; height: 54px; }
       .ring svg{ transform: rotate(-90deg); }
       .ring .pct{ position: absolute; inset: 0; display: grid; place-items: center; font-weight: 700; color: var(--success); }
       .ring .bg{ stroke: #e5e7eb; }
@@ -71,7 +71,7 @@
               {{ user.text.back }}</button>
             <!-- <div style="width:90px;"></div> -->
           </div>
-          <h1 class="page-title mb-2 m-0">{{ test.theme }}</h1>
+          <h1 class="page-title mb-2 m-0">{{ test.theme|strip_num_prefix }}</h1>
      
          <div class="position-relative p-3 mb-3" style="background:#ede7ff;border-radius:16px;">
                 <div class="d-flex justify-content-between align-items-center">
@@ -83,8 +83,7 @@
                     <div class="mt-2" style="font-weight:600;">{{ user.text.test_result }}</div>
                   </div>  
                   {% with pct_str=test.correct_answers|percent_in_parens %}
-                  <div class="ring" 
-                      data-correct="{{ test.correct_answers|correct_count }}" 
+                   <div class="ring"    data-correct="{{ test.correct_answers|correct_count }}" 
                      data-total="{{ test.correct_answers|total_count }}">
                     <svg width="54" height="54" viewBox="0 0 54 54" style="transform: rotate(-90deg);">
                       <circle class="bg" cx="27" cy="27" r="23" fill="none" stroke-width="6" pathLength="100" stroke-dasharray="100 100" />
@@ -108,7 +107,7 @@
                         </clipPath>
                         </defs>
                         </svg>
-                         {{ test.correct_answers}}{{ test.correct_answers|correct_count}}/{{ test.correct_answers|total_count}}</div>
+                         {{ test.correct_answers}}</div>
                   <div class="bg-white  check-btn px-3 py-2 mb-2">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <g clip-path="url(#clip0_36_153)">
