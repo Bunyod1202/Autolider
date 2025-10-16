@@ -118,8 +118,8 @@
            
             <div class="text-end" style="min-width: 160px;">
               {% if user.is_active %}
-              <button id="btn-start-new" class="btn-pill btn-pill--primary" type="submit" form="form" formaction="/bot/test/" formmethod="post" onclick="onStartNewClick()">{{ user.text.start_testing }}</button>
-              <button id="btn-continue" class="btn-pill btn-pill--primary ms-2" type="submit" form="form" formaction="/bot/test/" formmethod="post" onclick="onContinueClick()" style="display:none">{{ user.text.continue_label|default:'Davom etish' }}</button>
+              <button id="btn-start-new" class="btn-pill btn-pill--primary" type="submit" form="form" formaction="/bot/test/{{ test.id }}" formmethod="post" onclick="onStartNewClick()">{{ user.text.start_testing }}</button>
+              <button id="btn-continue" class="btn-pill btn-pill--primary ms-2" type="submit" form="form" formaction="/bot/test/{{ test.id }}" formmethod="post" onclick="onContinueClick()" style="display:none">{{ user.text.continue_label|default:'Davom etish' }}</button>
               {% else %}
               <button class="btn-pill btn-pill--primary" type="button" onclick="youAreNotActive()">{{ user.text.start_testing }}</button>
               {% endif %}

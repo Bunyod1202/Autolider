@@ -1,4 +1,4 @@
-<!doctype html>
+<!-- <!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
@@ -90,7 +90,7 @@
                 <h5 class="mb-3 text-center">{{ quiz.question | safe }}</h5>
                 {% for option in quiz.options %}
                 <button id="quiz-option-{{ option.id }}" type="button" class="btn btn-light my-2 option-btn" data-quiz-id="{{ quiz.id }}" data-option-id="{{ option.id }}" onclick="selectQuizOption({{ quiz.id }}, {{ option.id}}, {{quiz.answer.id }});">
-                <!-- <span class="option-index">{{ forloop.counter }}</span> -->
+               // <span class="option-index">{{ forloop.counter }}</span>
                     <span class="flex-grow-1">{{ option.text }}</span>
                 </button>
             {% endfor %}
@@ -115,7 +115,7 @@
         <input type="hidden" id="selected_options" name="selected_options" value=""/>
     </form>
 
-    <!-- Exit/Continue Modal (restyled) -->
+//Exit/Continue Modal (restyled)
     <div class="modal fade" id="exitModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -352,4 +352,134 @@
     </script>
   </body>
 </html>
+ -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ theme.name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+      <style>
+          .quiz-card-active {
+              display: block!important;
+          }
 
+          .quiz-btn-active {
+              background-color: #d3d4d5!important;
+              border-color: #c6c7c8!important;
+          }
+
+          .success {
+              background-color: #82d7b0;
+              border-color: #6ac69b;
+          }
+
+          .danger {
+              background-color: #e1949b;
+              border-color: #de7a83;
+          }
+      </style>
+  </head>
+  <body>
+    <div class="fixed-top" id="header" style="background-color: #ffffff;">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center py-4">
+                <h1 class="mb-0">{{ theme.name }}</h1>
+                <span id="timer">00:00:00</span>
+            </div>
+        </div>
+    </div>
+    <div class="container" id="body" style="margin-bottom: 70px;">
+    {% for quiz in theme.quizzes %}
+        <div class="card my-2 d-none{% if forloop.first %} quiz-card-active{% endif %} border-0" id="quiz-{{ quiz.id }}">
+          {% if quiz.image_url %}
+          <img class="card-img-top" src="{{ quiz.image_url }}" alt="{{ quiz.question }}">
+          {% endif %}
+          <div class="card-body">
+              <h5 class="card-title">{{ quiz.question | safe }}</h5>
+              <hr/>
+              {% for option in quiz.options %}
+                    <button id="quiz-option-{{ option.id }}" type="button" class="btn btn-light my-1" style="width: 100%;" onclick="selectQuizOption({{ quiz.id }}, {{ option.id}}, {{quiz.answer.id }});">{{ option.text }}</button>
+              {% endfor %}
+          </div>
+        </div>
+    {% endfor %}
+    </div>
+    <div class="fixed-bottom" style="background-color: #ffffff;">
+        <div class="container py-3">
+            <div class="overflow-scroll d-flex">
+                {% for quiz in theme.quizzes %}
+                <button id="quiz-{{ quiz.id }}-btn" class="btn btn-light mx-1{% if forloop.first %} quiz-btn-active{% endif %}" onclick="goToQuiz({{ quiz.id }})">{{ forloop.counter }}</button>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <form class="d-none" id="form" action="/bot/save-test/" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="user_id" value="{{ user.id }}"/>
+        <input type="hidden" name="theme_id" value="{{ theme.id }}"/>
+        <input type="hidden" id="spent_seconds" name="spent_seconds" value="0"/>
+        <input type="hidden" id="selected_options" name="selected_options" value=""/>
+    </form>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+        let webApp = window.Telegram.WebApp;
+        webApp.expand();
+
+        document.getElementById('body').style.marginTop = document.getElementById('header').offsetHeight + "px";
+
+        let quizzes_count = {{ theme.quizzes_count }};
+        let seconds = 0;
+        setInterval(() => {
+            seconds++;
+            let timer = document.getElementById('timer');
+            timer.innerHTML = pad(parseInt(seconds / 3600)) + ":" + pad(parseInt((seconds % 3600) / 60)) + ":" + pad(seconds%60);
+        }, 1000);
+
+        function pad(val) {
+          var valString = val + "";
+          if (valString.length < 2) {
+            return "0" + valString;
+          } else {
+            return valString;
+          }
+        }
+
+        function goToQuiz(quiz_id){
+            document.getElementsByClassName('quiz-card-active')[0].classList.remove('quiz-card-active');
+            document.getElementsByClassName('quiz-btn-active')[0].classList.remove('quiz-btn-active');
+            document.getElementById('quiz-' + quiz_id).classList.add('quiz-card-active');
+            document.getElementById('quiz-' + quiz_id + '-btn').classList.add('quiz-btn-active');
+        }
+
+        let selected_options = [];
+
+        function selectQuizOption(quiz_id, option_id, answer_id){
+            selected_options.push(option_id);
+            if(option_id === answer_id){
+                document.getElementById('quiz-option-' + option_id).classList.remove('btn-light');
+                document.getElementById('quiz-option-' + option_id).classList.add('btn-success');
+                document.getElementById('quiz-' + quiz_id + '-btn').classList.add('success');
+            }else{
+                document.getElementById('quiz-option-' + option_id).classList.remove('btn-light');
+                document.getElementById('quiz-option-' + option_id).classList.add('btn-danger');
+                document.getElementById('quiz-option-' + answer_id).classList.remove('btn-light');
+                document.getElementById('quiz-option-' + answer_id).classList.add('btn-success');
+                document.getElementById('quiz-' + quiz_id + '-btn').classList.add('danger');
+            }
+            for(var b of document.getElementById('quiz-' + quiz_id).getElementsByTagName('button')){
+                b.removeAttribute('onclick');
+            }
+            if(selected_options.length === quizzes_count){
+                document.getElementById('spent_seconds').value = seconds;
+                document.getElementById('selected_options').value = selected_options.join(',');
+                document.getElementById('form').submit()
+            }
+        }
+
+        webApp.enableClosingConfirmation();
+    </script>
+  </body>
+</html>
