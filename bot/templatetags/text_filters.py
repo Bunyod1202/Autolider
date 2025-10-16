@@ -46,3 +46,15 @@ def correct_count(value: str):
         return m2.group(0) if m2 else ''
     except Exception:
         return ''
+
+
+@register.filter
+def complement_100(value):
+    try:
+        v = float(str(value).replace(',', '.'))
+        res = 100 - v
+        if abs(res - round(res)) < 1e-6:
+            return int(round(res))
+        return f"{res:.1f}"
+    except Exception:
+        return 100
