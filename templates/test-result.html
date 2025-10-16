@@ -39,23 +39,6 @@
       .scroll-top-btn.show { display: flex; }
       .scroll-top-btn svg { width: 20px; height: 20px; fill: currentColor; }
 
-     .hiddenOverlay {
-       position: fixed;
-       inset: 0;
-       background: rgba(255,255,255,0.98);
-       display: none;
-       align-items: center;
-       justify-content: center;
-       font-size: 20px;
-       color: #222;
-       z-index: 9999;
-       text-align: center;
-       padding: 2rem;
-       user-select: none;
-       -webkit-user-select: none;
-       -webkit-touch-callout: none;
-     }
-
     </style>
   </head>
   <body>
@@ -139,8 +122,6 @@
         <path d="M12 5l7 7-1.41 1.41L13 9.83V20h-2V9.83l-4.59 4.58L5 12l7-7z"/>
       </svg>
     </button>
-
-     <div id="overlay" class="hiddenOverlay">🔒 Secure content hidden</div>
     <form style="display:none" id="back-form" method="post">
       <input type="hidden" name="user_id" value="{{ test.user_id|default:user.id }}" />
     </form>
@@ -173,39 +154,9 @@
           webApp.expand();
           try{ webApp.BackButton.show(); webApp.BackButton.onClick(goBack);}catch(e){}
         }
-        // Normalize overlay text in case of encoding issues
-        try { document.getElementById('overlay').textContent = '🔒 Secure content hidden'; } catch(e){}
-         document.addEventListener('visibilitychange', () => {
-    const overlay = document.getElementById('overlay');
-    if (document.hidden) {
-      overlay.style.display = 'flex';
-    } else {
-      // qaytganda 1 s ga ko'rsatib keyin yo'q qilamiz
-      overlay.style.display = 'flex';
-      setTimeout(() => { overlay.style.display = 'none'; }, 1000);
-    }
-  });
-  let touchStartTime = 0;
-  document.addEventListener('touchstart', (e) => {
-    touchStartTime = Date.now();
-  }, {passive:true});
-  document.addEventListener('touchend', (e) => {
-    if (Date.now() - touchStartTime > 600) {
-      // uzoq bosish (save image harakati) aniqlandi
-      document.getElementById('overlay').style.display = 'flex';
-      setTimeout(()=> document.getElementById('overlay').style.display = 'none', 1200);
-    }
-  });
 
-  // Ctrl+S yoki PrintScreen uchun oddiy ogohlantirish
-  window.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey && e.key === 's') || e.key === 'PrintScreen') {
-      e.preventDefault();
-      const overlay = document.getElementById('overlay');
-      overlay.style.display = 'flex';
-      setTimeout(()=> overlay.style.display = 'none', 900);
-    }
-  });
+
+
 
     </script>
   </body>
