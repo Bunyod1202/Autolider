@@ -16,15 +16,26 @@
           .quiz-wrap { background:#ede7ff; border-radius:16px; padding:16px; }
 
           /* Best-effort screenshot deterrents */
-          html, body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
-          img { -webkit-user-drag: none; user-drag: none; }
+          html, body { 
+              -webkit-user-select: none; 
+              user-select: none; 
+              -webkit-touch-callout: none; 
+              -webkit-user-drag: none;
+          }
+          * {
+              -webkit-tap-highlight-color: transparent;
+          }
+          img { 
+              -webkit-user-drag: none; 
+              user-drag: none; 
+              pointer-events: none;
+          }
           .quiz-card-active {
               display: block!important;
           }
           .quiz-card-wrap {
             height: 100%;
           }
-          /* .quiz-btn-active { background-color:#6b7280!important; border-color:#6b7280!important; color:#fff!important; } */
 
           .success { background-color:#22c55e!important; border-color:#22c55e!important; color:#fff!important; }
           .danger  { background-color:#ef4444!important; border-color:#ef4444!important; color:#fff!important; }
@@ -72,9 +83,56 @@
           .quiz-nav-scroll::-webkit-scrollbar {
             display: none; /* Chrome, Safari and Opera */
           }
+
+          /* Screenshot warning modal */
+          #screenshotModal .modal-dialog {
+            max-width: 380px;
+          }
+          #screenshotModal .modal-content {
+            border: 0;
+            border-radius: 16px;
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+          }
+          #screenshotModal .modal-body {
+            padding: 20px;
+            text-align: center;
+          }
+          #screenshotModal .warning-icon {
+            font-size: 48px;
+            color: #ffc107;
+            margin-bottom: 15px;
+          }
+
+          /* Anti-screenshot overlay */
+          .screenshot-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            font-size: 24px;
+            text-align: center;
+            padding: 20px;
+          }
       </style>
   </head>
   <body>
+    <!-- Screenshot overlay -->
+    <div class="screenshot-overlay" id="screenshotOverlay">
+      <div>
+        <div style="font-size: 48px; margin-bottom: 20px;">⚠️</div>
+        <h3>Skrinshot qilish taqiqlangan!</h3>
+        <p>Test natijalari sizning shaxsiy profilingizga saqlanadi.</p>
+      </div>
+    </div>
+
     <div class="fixed-top" id="header" style="background-color: #ffffff;">
         <div class="container">
             <div class="d-flex align-items-center justify-content-between py-3">
@@ -106,7 +164,6 @@
                 <h5 class="mb-3 text-center">{{ quiz.question | safe }}</h5>
                 {% for option in quiz.options %}
                   <button id="quiz-option-{{ option.id }}" type="button" class="btn btn-light my-2 option-btn" data-quiz-id="{{ quiz.id }}" data-option-id="{{ option.id }}" onclick="selectQuizOption({{ quiz.id }}, {{ option.id}}, {{quiz.answer.id }});">
-                    <!-- <span class="option-index">{{ forloop.counter }}</span> -->
                     <span class="flex-grow-1">{{ option.text }}</span>
                   </button>
                 {% endfor %}
@@ -131,7 +188,7 @@
         <input type="hidden" id="selected_options" name="selected_options" value=""/>
     </form>
 
-    <!-- Exit/Continue Modal (restyled) -->
+    <!-- Exit/Continue Modal -->
     <div class="modal fade" id="exitModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -145,6 +202,23 @@
         </div>
       </div>
     </div>
+
+    <!-- Screenshot Warning Modal -->
+    <div class="modal fade" id="screenshotModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-body">
+            <div class="warning-icon">⚠️</div>
+            <h5 class="text-center mb-3">Skrinshot qilish taqiqlangan!</h5>
+            <p class="text-center mb-3">Test natijalari sizning shaxsiy profilingizga saqlanadi. Skrinshot qilish test natijalariga ta'sir qilishi mumkin.</p>
+            <div class="d-flex justify-content-center">
+              <button type="button" class="btn btn-warning btn-pill" data-bs-dismiss="modal">Tushunarli</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3" crossorigin="anonymous"></script>
     <script type="text/javascript">
         const webApp = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
@@ -160,6 +234,10 @@
         let timerId = null;
         const stateKey = `test_state_{{ user.id }}_{{ theme.id }}`;
 
+        // Screenshot detection variables
+        let screenshotWarningShown = false;
+        let lastVisibilityChange = Date.now();
+
         function startTimer(){
             if(timerId !== null) return;
             timerId = setInterval(() => {
@@ -168,12 +246,14 @@
                 persistState();
             }, 1000);
         }
+        
         function stopTimer(){
             if(timerId !== null){
                 clearInterval(timerId);
                 timerId = null;
             }
         }
+        
         function renderTimer(){
             const timer = document.getElementById('timer');
             timer.innerHTML = pad(parseInt(seconds / 3600)) + ":" + pad(parseInt((seconds % 3600) / 60)) + ":" + pad(seconds%60);
@@ -195,9 +275,7 @@
             document.getElementById('quiz-' + quiz_id).classList.add('quiz-card-active');
             document.getElementById('quiz-' + quiz_id + '-btn').classList.add('quiz-btn-active');
             
-            // Center the active button
             centerActiveButton();
-            
             persistState({ current_quiz_id: quiz_id });
         }
 
@@ -229,10 +307,8 @@
                 const buttonOffset = activeButton.offsetLeft;
                 const buttonWidth = activeButton.offsetWidth;
                 
-                // Calculate scroll position to center the button
                 const scrollPosition = buttonOffset - (containerWidth / 2) + (buttonWidth / 2);
                 
-                // Smoothly scroll to center the active button
                 navScroll.scrollTo({
                     left: scrollPosition,
                     behavior: 'smooth'
@@ -298,7 +374,6 @@
                 if(state.seconds){ seconds = state.seconds; renderTimer(); }
                 if(Array.isArray(state.selected_options)){
                     selected_options = state.selected_options;
-                    // Re-apply visual selections
                     for(const optId of selected_options){
                         const btn = document.getElementById('quiz-option-' + optId);
                         if(!btn) continue;
@@ -309,10 +384,8 @@
                 }
                 if(state.current_quiz_id){ 
                     goToQuiz(state.current_quiz_id);
-                    // Center the active button after restoring state
                     setTimeout(centerActiveButton, 100);
                 }
-                // If all questions are already answered, auto-submit to analysis
                 if(Array.isArray(selected_options) && selected_options.length === quizzes_count){
                     clearState();
                     document.getElementById('spent_seconds').value = seconds;
@@ -324,9 +397,7 @@
 
         function clearState(){
             try {
-                // Remove the exact state key for this user+theme
                 localStorage.removeItem(stateKey);
-                // Also clean up any leftover progress keys for this user across themes
                 const prefix = `test_state_{{ user.id }}_`;
                 const toRemove = [];
                 for (let i = 0; i < localStorage.length; i++) {
@@ -337,17 +408,151 @@
             } catch(e) {}
         }
 
+        // TELEFON UCHUN SKRINSHOT HIMOYASI
+        function initMobileScreenshotProtection() {
+            // 1. Visibility change detection - telefonlarda skrinshot sahifani blur qiladi
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) {
+                    const now = Date.now();
+                    // Agar tez orada visibility o'zgarsa, bu skrinshot bo'lishi mumkin
+                    if (now - lastVisibilityChange < 1000) {
+                        showScreenshotWarning();
+                    }
+                    lastVisibilityChange = now;
+                }
+            });
+
+            // 2. Page blur/focus events
+            window.addEventListener('blur', function() {
+                setTimeout(() => {
+                    if (!document.hasFocus()) {
+                        showScreenshotWarning();
+                    }
+                }, 100);
+            });
+
+            // 3. Resize detection - ba'zi skrinshot app'lari o'lchamni o'zgartiradi
+            let lastWidth = window.innerWidth;
+            let lastHeight = window.innerHeight;
+            window.addEventListener('resize', function() {
+                if (window.innerWidth !== lastWidth || window.innerHeight !== lastHeight) {
+                    showScreenshotOverlay();
+                    setTimeout(hideScreenshotOverlay, 2000);
+                }
+                lastWidth = window.innerWidth;
+                lastHeight = window.innerHeight;
+            });
+
+            // 4. Touch manipulation detection
+            let touchStartTime = 0;
+            document.addEventListener('touchstart', function(e) {
+                touchStartTime = Date.now();
+                // Agar 3ta yoki undan ko'p barmoq bilan bosilsa
+                if (e.touches.length >= 3) {
+                    showScreenshotWarning();
+                }
+            });
+
+            document.addEventListener('touchend', function(e) {
+                // Uzoq bosib turish
+                if (Date.now() - touchStartTime > 2000) {
+                    showScreenshotWarning();
+                }
+            });
+
+            // 5. Prevent text selection
+            document.addEventListener('selectstart', function(e) {
+                e.preventDefault();
+                return false;
+            });
+
+            // 6. Key combinations for mobile browsers
+            document.addEventListener('keydown', function(e) {
+                // Volume buttons + power button combination
+                if (e.key === 'VolumeDown' || e.key === 'VolumeUp' || e.key === 'Power') {
+                    showScreenshotOverlay();
+                    setTimeout(hideScreenshotOverlay, 3000);
+                }
+            });
+
+            // 7. Periodic screenshot detection
+            setInterval(() => {
+                // Check for unusual window properties
+                if (window.outerHeight - window.innerHeight > 200 || 
+                    window.outerWidth - window.innerWidth > 200) {
+                    showScreenshotWarning();
+                }
+            }, 1000);
+
+            // 8. CSS protection - make content hard to screenshot
+            const style = document.createElement('style');
+            style.textContent = `
+                @media screen and (max-width: 768px) {
+                    body::before {
+                        content: '';
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: linear-gradient(45deg, transparent 95%, rgba(255,255,255,0.1) 95%),
+                                    linear-gradient(-45deg, transparent 95%, rgba(255,255,255,0.1) 95%);
+                        background-size: 20px 20px;
+                        pointer-events: none;
+                        z-index: 9998;
+                        opacity: 0.1;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        function showScreenshotOverlay() {
+            const overlay = document.getElementById('screenshotOverlay');
+            overlay.style.display = 'flex';
+        }
+
+        function hideScreenshotOverlay() {
+            const overlay = document.getElementById('screenshotOverlay');
+            overlay.style.display = 'none';
+        }
+
+        function showScreenshotWarning() {
+            if (screenshotWarningShown) return;
+            
+            screenshotWarningShown = true;
+            
+            // Overlay ko'rsatish
+            showScreenshotOverlay();
+            
+            // Modal ko'rsatish
+            const modal = new bootstrap.Modal(document.getElementById('screenshotModal'));
+            modal.show();
+            
+            // 3 sekunddan keyin overlay yashirish
+            setTimeout(() => {
+                hideScreenshotOverlay();
+                screenshotWarningShown = false;
+            }, 3000);
+
+            // Modal yopilganda flag reset
+            document.getElementById('screenshotModal').addEventListener('hidden.bs.modal', function() {
+                screenshotWarningShown = false;
+            });
+        }
+
         // Back handling
         function onBackClick(){
             stopTimer();
             const modal = new bootstrap.Modal(document.getElementById('exitModal'));
             modal.show();
         }
+        
         function resumeTimer(){
             startTimer();
         }
+        
         function confirmExit(){
-            // Keep state saved, navigate back to theme detail
             stopTimer();
             persistState();
             const form = document.createElement('form');
@@ -365,6 +570,9 @@
 
         // Telegram native back button
         if (webApp) { try { webApp.BackButton.show(); webApp.BackButton.onClick(onBackClick); } catch(e) {} }
+
+        // Initialize mobile screenshot protection
+        initMobileScreenshotProtection();
 
         // Restore previous state if any
         restoreState();
