@@ -8,6 +8,9 @@ from telebot.apihelper import ApiException
 
 from users.models import User
 from bot.models import Constant
+from bot import models as bot_models
+from bot.utils.constants import TOKEN
+from threading import Thread
 
 from bot.utils.constants import CONSTANT, BASE_URL
 
@@ -178,3 +181,98 @@ def broadcast_announcement(bot: TeleBot, title: str, text: str = None, photo_fil
                 # best-effort, skip on other API errors
                 continue
     return total
+
+
+def _build_inline_markup(button_text: str = None, button_url: str = None):
+    if button_text and button_url:
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton(text=button_text, url=button_url))
+        return markup
+    return None
+
+
+def send_announcement_in_background(announcement_id: int):
+    """Background sender for Announcement to avoid request timeouts.
+    Uploads media once to get a Telegram file_id, then reuses it for all users.
+    """
+    bot = TeleBot(TOKEN, parse_mode='html')
+    try:
+        ann = bot_models.Announcement.objects.get(id=announcement_id)
+    except bot_models.Announcement.DoesNotExist:
+        return
+
+    markup = _build_inline_markup(ann.button_text, ann.button_url)
+    users = list(User.objects.all())
+
+    delivered = 0
+    photo_file_id = None
+    video_file_id = None
+
+    # If there's media, upload once to obtain file_id
+    if ann.video:
+        for user in users:
+            try:
+                with ann.video.open('rb') as f:
+                    msg = bot.send_video(user.telegram_id, f, caption=ann.text or None, reply_markup=markup)
+                delivered += 1
+                video_file_id = msg.video.file_id if getattr(msg, 'video', None) else None
+                break
+            except ApiException as e:
+                err = str(e.args)
+                if "deactivated" in err or "blocked by the user" in err:
+                    user.is_active = False
+                    user.save(update_fields=["is_active"])
+                continue
+            except Exception:
+                continue
+    elif ann.photo:
+        for user in users:
+            try:
+                with ann.photo.open('rb') as f:
+                    msg = bot.send_photo(user.telegram_id, f, caption=ann.text or None, reply_markup=markup)
+                delivered += 1
+                if getattr(msg, 'photo', None):
+                    photo_file_id = msg.photo[-1].file_id
+                break
+            except ApiException as e:
+                err = str(e.args)
+                if "deactivated" in err or "blocked by the user" in err:
+                    user.is_active = False
+                    user.save(update_fields=["is_active"])
+                continue
+            except Exception:
+                continue
+
+    # Send to remaining users using file_id when available
+    for user in users:
+        try:
+            if video_file_id:
+                bot.send_video(user.telegram_id, video_file_id, caption=ann.text or None, reply_markup=markup)
+            elif photo_file_id:
+                bot.send_photo(user.telegram_id, photo_file_id, caption=ann.text or None, reply_markup=markup)
+            elif ann.video:
+                with ann.video.open('rb') as f:
+                    bot.send_video(user.telegram_id, f, caption=ann.text or None, reply_markup=markup)
+            elif ann.photo:
+                with ann.photo.open('rb') as f:
+                    bot.send_photo(user.telegram_id, f, caption=ann.text or None, reply_markup=markup)
+            else:
+                bot.send_message(user.telegram_id, ann.text or ann.title, reply_markup=markup)
+            delivered += 1
+            sleep(0.03)
+        except ApiException as e:
+            error = str(e.args)
+            if "deactivated" in error or "blocked by the user" in error:
+                user.is_active = False
+                user.save(update_fields=["is_active"])
+                continue
+        except Exception:
+            continue
+
+    ann.is_sent = True
+    ann.sent_at = timezone.now()
+    ann.save(update_fields=["is_sent", "sent_at"])
+
+
+def kick_off_announcement_send(announcement_id: int):
+    Thread(target=send_announcement_in_background, args=(announcement_id,), daemon=True).start()
