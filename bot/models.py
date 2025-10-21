@@ -222,3 +222,25 @@ class Constant(models.Model):
     def __str__(self):
         return f"{self.key}: {self.data}"
 
+
+class Announcement(models.Model):
+    title = models.CharField(max_length=255)
+    text = models.TextField(blank=True, null=True)
+    photo = models.ImageField(upload_to='announcements/', blank=True, null=True)
+    video = models.FileField(upload_to='announcements/', blank=True, null=True)
+    button_text = models.CharField(max_length=127, blank=True, null=True)
+    button_url = models.URLField(blank=True, null=True)
+
+    is_sent = models.BooleanField(default=False)
+    sent_at = models.DateTimeField(blank=True, null=True)
+    added_time = models.DateTimeField(auto_now_add=True)
+    last_updated_time = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.photo and self.video:
+            raise ValidationError("Rasm va video bir vaqtning o'zida yuklanmasin. Faqat bittasini tanlang.")
+
+    def __str__(self):
+        return f"{self.title}"
+

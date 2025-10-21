@@ -143,3 +143,38 @@ def sending_post(bot: TeleBot, message: types.Message, sender: User):
             total=total
         )
     )
+
+
+def broadcast_announcement(bot: TeleBot, title: str, text: str = None, photo_file=None, video_file=None,
+                           button_text: str = None, button_url: str = None):
+    """
+    Send an announcement to all users with optional media and single URL button.
+    `photo_file` / `video_file` should be file-like objects opened in binary mode.
+    """
+    markup = None
+    if button_text and button_url:
+        markup = types.InlineKeyboardMarkup()
+        markup.add(types.InlineKeyboardButton(text=button_text, url=button_url))
+
+    users = list(User.objects.all())
+    total = 0
+    for user in users:
+        try:
+            if video_file is not None:
+                bot.send_video(user.telegram_id, video_file, caption=text or None, reply_markup=markup)
+            elif photo_file is not None:
+                bot.send_photo(user.telegram_id, photo_file, caption=text or None, reply_markup=markup)
+            else:
+                bot.send_message(user.telegram_id, text or title, reply_markup=markup)
+            total += 1
+            sleep(0.05)
+        except ApiException as e:
+            error = str(e.args)
+            if "deactivated" in error or "blocked by the user" in error:
+                user.is_active = False
+                user.save(update_fields=["is_active"])
+                continue
+            else:
+                # best-effort, skip on other API errors
+                continue
+    return total
