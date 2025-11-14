@@ -4,8 +4,9 @@
   .dnd-help { color:#666; font-size: 12px; margin-top: 6px; }
   .dnd-preview { margin-top:8px; max-width: 260px; display:none; border-radius:6px; }
 </style>
-<div class="dnd-input" id="{{ widget.attrs.id }}_container">
-  <div class="dnd-input-wrap" id="{{ widget.attrs.id }}_drop">
+{% with input_id=widget.attrs.id|default:widget.name %}
+<div class="dnd-input" id="{{ input_id }}_container">
+  <div class="dnd-input-wrap" id="{{ input_id }}_drop">
     <div>
       <strong>Rasmni bu yerga tashlang</strong>
     </div>
@@ -13,19 +14,20 @@
     <input
       type="file"
       name="{{ widget.name }}"
-      {% include "django/forms/widgets/attrs.html" %}
+      id="{{ input_id }}"
       accept="image/*"
       style="display:none"
+      {% for attr, val in widget.attrs.items %}{% if attr != 'id' %} {{ attr }}="{{ val }}"{% endif %}{% endfor %}
     />
   </div>
-  <img id="{{ widget.attrs.id }}_preview" class="dnd-preview" alt="preview" />
+  <img id="{{ input_id }}_preview" class="dnd-preview" alt="preview" />
 </div>
 <script>
   (function(){
     try {
-      var drop = document.getElementById('{{ widget.attrs.id }}_drop');
-      var input = document.getElementById('{{ widget.attrs.id }}');
-      var preview = document.getElementById('{{ widget.attrs.id }}_preview');
+      var drop = document.getElementById('{{ input_id }}_drop');
+      var input = document.getElementById('{{ input_id }}');
+      var preview = document.getElementById('{{ input_id }}_preview');
 
       function showPreview(file){
         if(!file) return;
@@ -58,3 +60,4 @@
     } catch(e) { /* no-op */ }
   })();
   </script>
+{% endwith %}
