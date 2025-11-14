@@ -6,6 +6,11 @@ from .models import Quiz
 class DragAndDropFileInput(forms.ClearableFileInput):
     template_name = 'quizzes/widgets/dragndrop_file_input.html'
 
+    def get_context(self, name, value, attrs):
+        attrs = attrs or {}
+        attrs.setdefault('id', f'id_{name}')
+        return super().get_context(name, value, attrs)
+
 
 class QuizAdminForm(forms.ModelForm):
     image_upload = forms.ImageField(
@@ -20,4 +25,3 @@ class QuizAdminForm(forms.ModelForm):
     class Meta:
         model = Quiz
         fields = ['theme', 'question_uz', 'question_ru', 'image_url', 'is_active']
-
