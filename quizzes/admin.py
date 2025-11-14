@@ -7,7 +7,6 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from uuid import uuid4
 import os
-from requests import post
 
 from quizzes import models
 from .forms import QuizAdminForm
@@ -97,7 +96,7 @@ class QuizAdmin(admin.ModelAdmin):
         'theme',
         'question_uz',
         'question_ru',
-        'image_upload',  # drag&drop file input (optional)
+        'image_upload',  # drag&drop file input (AJAX or fallback on save)
         'image_url',     # or paste a URL
         'is_active',
         'added_time',
@@ -106,24 +105,21 @@ class QuizAdmin(admin.ModelAdmin):
 
     def save_model(self, request, obj, form, change):
         uploaded = form.cleaned_data.get('image_upload')
-        if uploaded:
+        # If AJAX already filled image_url we don't need to re-upload.
+        # Otherwise, save uploaded file to local media and set absolute URL.
+        if uploaded and not obj.image_url:
             try:
-                file_bytes = uploaded.read()
-                content_type = getattr(uploaded, 'content_type', 'image/jpeg') or 'image/jpeg'
-                resp = post(
-                    'https://telegra.ph/upload',
-                    files={'file': ('file', file_bytes, content_type)},
-                    timeout=20,
-                )
-                resp.raise_for_status()
-                data = resp.json()
-                if isinstance(data, list) and data and 'src' in data[0]:
-                    obj.image_url = f"https://telegra.ph{data[0]['src']}"
-                    messages.success(request, 'Rasm Telegra.ph ga yuklandi va URL saqlandi.')
-                else:
-                    messages.error(request, 'Rasmni yuklashda kutilmagan javob qaytdi.')
+                _, ext = os.path.splitext(getattr(uploaded, 'name', '') or '')
+                if not ext:
+                    ext = '.jpg'
+                filename = f"quizzes/{uuid4().hex}{ext}"
+                saved_path = default_storage.save(filename, uploaded)
+                from django.conf import settings
+                media_url = getattr(settings, 'MEDIA_URL', '/media/')
+                obj.image_url = request.build_absolute_uri(f"{media_url}{saved_path}")
+                messages.success(request, 'Rasm serverga yuklandi va URL saqlandi.')
             except Exception as e:
-                messages.error(request, f"Rasmni yuklab bo'lmadi: {e}")
+                messages.error(request, f"Rasmni serverga yuklab bo'lmadi: {e}")
         super().save_model(request, obj, form, change)
 
     # Admin-only AJAX upload endpoint (stores file on server and returns absolute URL)
