@@ -3,14 +3,23 @@ from django import forms
 from .models import Quiz
 
 
+class DragAndDropFileInput(forms.ClearableFileInput):
+    template_name = 'quizzes/widgets/dragndrop_file_input.html'
+
+    def get_context(self, name, value, attrs):
+        attrs = attrs or {}
+        attrs.setdefault('id', f'id_{name}')
+        return super().get_context(name, value, attrs)
+
+
 class QuizAdminForm(forms.ModelForm):
     image_upload = forms.ImageField(
         required=False,
-        widget=forms.ClearableFileInput(attrs={'accept': 'image/*'}),
+        widget=DragAndDropFileInput(attrs={'accept': 'image/*'}),
         help_text=(
-            "Rasmni tanlang (yoki URL kiriting)."
+            "Rasmni tortib tashlang yoki tanlang. URL bo'lsa, quyidagi `image_url` maydoni avtomatik to'ldiriladi."
         ),
-        label="Rasm fayl",
+        label="Rasm (drag & drop)",
     )
 
     class Meta:

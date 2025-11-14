@@ -28,6 +28,19 @@
       var drop = document.getElementById('{{ input_id }}_drop');
       var input = document.getElementById('{{ input_id }}');
       var preview = document.getElementById('{{ input_id }}_preview');
+      var form = input && input.form;
+      // Admin's image_url field (text input) – will be auto-filled after upload
+      function findImageUrlInput(){
+        if(!form) return document.querySelector('input[name="image_url"]');
+        return form.querySelector('input[name="image_url"]') || document.querySelector('input[name="image_url"]');
+      }
+
+      // Resolve admin upload endpoint relative to model admin root
+      function getUploadUrl(){
+        // We registered admin url at /admin/quizzes/quiz/upload-image/
+        // Use absolute path to avoid base tag issues
+        return '/admin/quizzes/quiz/upload-image/';
+      }
 
       function showPreview(file){
         if(!file) return;
@@ -41,10 +54,10 @@
 
       function handleFiles(files){
         if(!files || !files.length) return;
-        var dt = new DataTransfer();
-        dt.items.add(files[0]);
-        input.files = dt.files;
-        showPreview(files[0]);
+        var file = files[0];
+        showPreview(file);
+        // Upload immediately via AJAX; fill image_url on success
+        uploadFile(file);
       }
 
       drop.addEventListener('click', function(){ input.click(); });
@@ -57,6 +70,38 @@
         drop.classList.remove('is-dragover');
         handleFiles(e.dataTransfer.files);
       });
+
+      function getCsrfToken(){
+        // Prefer hidden input in admin form, fallback to cookie
+        var tokInput = form ? form.querySelector('input[name="csrfmiddlewaretoken"]') : null;
+        if (tokInput && tokInput.value) return tokInput.value;
+        var m = document.cookie.match(/csrftoken=([^;]+)/);
+        return m ? m[1] : '';
+      }
+
+      function uploadFile(file){
+        var url = getUploadUrl();
+        var fd = new FormData();
+        fd.append('file', file, file.name || 'image');
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', url, true);
+        try { xhr.setRequestHeader('X-CSRFToken', getCsrfToken()); } catch(e) {}
+        xhr.onreadystatechange = function(){
+          if(xhr.readyState === 4){
+            try {
+              var resp = JSON.parse(xhr.responseText || '{}');
+              if(xhr.status >= 200 && xhr.status < 300 && resp.ok && resp.url){
+                var urlInput = findImageUrlInput();
+                if(urlInput){ urlInput.value = resp.url; }
+              } else {
+                console.error('Upload failed', resp);
+                alert('Rasmni yuklab bo\'lmadi.');
+              }
+            } catch(err){ console.error(err); }
+          }
+        };
+        xhr.send(fd);
+      }
     } catch(e) { /* no-op */ }
   })();
   </script>

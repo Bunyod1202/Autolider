@@ -1,5 +1,12 @@
 from admin_auto_filters.filters import AutocompleteFilter
 from django.contrib import admin, messages
+from django.http import JsonResponse, HttpRequest
+from django.urls import path
+from django.utils import timezone
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
+from uuid import uuid4
+import os
 from requests import post
 
 from quizzes import models
@@ -118,3 +125,37 @@ class QuizAdmin(admin.ModelAdmin):
             except Exception as e:
                 messages.error(request, f"Rasmni yuklab bo'lmadi: {e}")
         super().save_model(request, obj, form, change)
+
+    # Admin-only AJAX upload endpoint (stores file on server and returns absolute URL)
+    def get_urls(self):
+        urls = super().get_urls()
+        custom = [
+            path('upload-image/', self.admin_site.admin_view(self.upload_image_view), name='quizzes_quiz_upload_image'),
+        ]
+        return custom + urls
+
+    def upload_image_view(self, request: HttpRequest):
+        if request.method != 'POST':
+            return JsonResponse({'ok': False, 'error': 'Only POST allowed.'}, status=405)
+
+        f = request.FILES.get('file')
+        if not f:
+            return JsonResponse({'ok': False, 'error': 'No file provided.'}, status=400)
+
+        # Determine extension from name or content_type
+        _, ext = os.path.splitext(f.name or '')
+        if not ext:
+            # crude fallback
+            ext = '.jpg'
+
+        filename = f"quizzes/{uuid4().hex}{ext}"
+        try:
+            saved_path = default_storage.save(filename, ContentFile(f.read()))
+            # Build absolute URL for the saved media
+            from django.conf import settings
+            media_url = getattr(settings, 'MEDIA_URL', '/media/')
+            # In admin, request has full host -> build absolute URL
+            absolute_url = request.build_absolute_uri(f"{media_url}{saved_path}")
+            return JsonResponse({'ok': True, 'url': absolute_url, 'path': saved_path})
+        except Exception as e:
+            return JsonResponse({'ok': False, 'error': str(e)}, status=500)
