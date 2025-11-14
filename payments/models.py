@@ -19,6 +19,16 @@ class Provider(models.Model):
     is_active = models.BooleanField(
         default=False,
     )
+    auto_deactivate_after_2m = models.BooleanField(
+        default=False,
+        help_text=(
+            "Agar yoqilsa: saqlagandan 2 daqiqa o'tib avtomatik ravishda is_active o'chiriladi."
+        ),
+    )
+    auto_deactivate_due = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
     added_time = models.DateTimeField(
         auto_now_add=True,
     )

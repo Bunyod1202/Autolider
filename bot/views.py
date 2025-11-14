@@ -9,6 +9,7 @@ from bot.utils.constants import TOKEN
 import re
 
 from quizzes.models import Theme, Option
+import random
 from tests.models import Test
 from users.models import User
 from subscriptions.utils import refresh_user_active_status
@@ -128,6 +129,10 @@ def test_view(request):
     refresh_user_active_status(user)
     if user.is_active:
         theme: Theme = Theme.objects.get(id=request.POST.get('theme_id'))
+        # Build randomized quiz order for this session
+        active_quizzes = list(theme.quizzes.filter(is_active=True))
+        random.shuffle(active_quizzes)
+
         return render(
             request,
             'test.html',
@@ -136,7 +141,7 @@ def test_view(request):
                 'theme': {
                     'id': theme.id,
                     'name': theme.name(user.text.language),
-                    'quizzes_count': theme.quizzes.filter(is_active=True).count(),
+                    'quizzes_count': len(active_quizzes),
                     'quizzes': [
                         {
                             'id': quiz.id,
@@ -150,7 +155,7 @@ def test_view(request):
                                 } for option in quiz.options.all()
                             ],
                             'answer': quiz.options.filter(is_correct=True).first(),
-                        } for quiz in theme.quizzes.filter(is_active=True)
+                        } for quiz in active_quizzes
                     ]
                 },
             }
