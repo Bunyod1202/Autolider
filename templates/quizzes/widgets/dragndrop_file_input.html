@@ -17,7 +17,7 @@
       id="{{ input_id }}"
       accept="image/*"
       style="display:none"
-      {% for attr, val in widget.attrs.items %}{% if attr != 'id' %} {{ attr }}="{{ val }}"{% endif %}{% endfor %}
+      {% for item in widget.attrs.items %}{% if item.0 != 'id' %} {{ item.0 }}="{{ item.1 }}"{% endif %}{% endfor %}
     />
   </div>
   <img id="{{ input_id }}_preview" class="dnd-preview" alt="preview" />
