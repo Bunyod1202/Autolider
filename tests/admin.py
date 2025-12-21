@@ -1,4 +1,3 @@
-from admin_auto_filters.filters import AutocompleteFilter
 from django.contrib import admin
 
 from tests import models
@@ -6,15 +5,10 @@ from django.utils.html import format_html
 from django.utils import timezone
 from django.contrib import messages
 
-
-class UserFilter(AutocompleteFilter):
-    title = 'User'
-    field_name = 'user'
-
-
-class ThemeFilter(AutocompleteFilter):
-    title = 'Theme'
-    field_name = 'theme'
+"""Admin for tests (Imtihonlar) app.
+Avoid hard dependency on admin_auto_filters to prevent admin import failures
+on servers where the package is missing.
+"""
 
 
 @admin.register(models.Test)
@@ -30,10 +24,7 @@ class TestAdmin(admin.ModelAdmin):
         'added_time',
         'last_updated_time',
     ]
-    list_filter = [
-        UserFilter,
-        ThemeFilter,
-    ]
+    list_filter = ['user', 'theme']
     search_fields = [
         'id',
         'user__telegram_id',
@@ -99,7 +90,7 @@ class ExamAdmin(admin.ModelAdmin):
 @admin.register(models.ExamAccess)
 class ExamAccessAdmin(admin.ModelAdmin):
     list_display = ['id', 'exam', 'user']
-    list_filter = ['exam']
+    list_filter = ['exam', 'user']
     search_fields = ['user__full_name', 'user__telegram_id', 'exam__title']
     autocomplete_fields = ['exam', 'user']
 
@@ -127,7 +118,7 @@ class ExamAttemptAdmin(admin.ModelAdmin):
     list_display = [
         'id', 'exam', 'user', 'started_at', 'finished_at', 'correct_count', 'wrong_count', 'total_questions', 'spent_time'
     ]
-    list_filter = ['exam']
+    list_filter = ['exam', 'user']
     search_fields = ['user__full_name', 'user__telegram_id', 'exam__title']
     autocomplete_fields = ['exam', 'user']
     inlines = [AttemptQuestionInline]
