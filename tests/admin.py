@@ -122,3 +122,15 @@ class ExamAttemptAdmin(admin.ModelAdmin):
     search_fields = ['user__full_name', 'user__telegram_id', 'exam__title']
     autocomplete_fields = ['exam', 'user']
     inlines = [AttemptQuestionInline]
+
+# Defensive: ensure models are registered even if decorators are skipped in some envs
+try:
+    if models.Exam not in admin.site._registry:
+        admin.site.register(models.Exam, ExamAdmin)
+    if models.ExamAccess not in admin.site._registry:
+        admin.site.register(models.ExamAccess, ExamAccessAdmin)
+    if models.ExamAttempt not in admin.site._registry:
+        admin.site.register(models.ExamAttempt, ExamAttemptAdmin)
+except Exception:
+    # avoid breaking admin startup
+    pass
