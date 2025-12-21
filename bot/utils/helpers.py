@@ -25,6 +25,26 @@ def is_phone_number(raw: str):
     return False
 
 
+def normalize_phone_number(raw: str) -> str:
+    """Return phone in +998XXXXXXXXX format when possible; else empty string."""
+    if not raw:
+        return ''
+    s = ''.join(ch for ch in str(raw).strip() if ch.isdigit() or ch == '+')
+    if s.startswith('+998') and len(s) == 13 and s[1:].isdigit():
+        return s
+    if s.startswith('998') and len(s) == 12 and s.isdigit():
+        return '+{}'.format(s)
+    if s.startswith('+') and not s.startswith('+998') and s[1:].isdigit():
+        # Non-UZ, store as-is
+        return s
+    digits = ''.join(ch for ch in s if ch.isdigit())
+    if len(digits) == 9:  # e.g. 901234567
+        return '+998' + digits
+    if len(digits) == 12 and digits.startswith('998'):
+        return '+' + digits
+    return ''
+
+
 def upload_file(bot, file_id):
     downloaded_file = bot.download_file(bot.get_file(file_id).file_path)
     file_path = post('https://telegra.ph/upload', files={'file': ('file', downloaded_file, 'image/jpeg')}).json()[0]['src']
@@ -51,6 +71,17 @@ def get_main_keyboard_markup(user):
             ),
         ),
     )
+    # Conditionally show Exams button only if user has phone and admin granted access
+    try:
+        from tests.models import ExamAccess
+        has_access = bool(user.phone_number) and ExamAccess.objects.filter(user=user, exam__is_active=True).exists()
+        if has_access:
+            keyboard_markup.add(
+                types.KeyboardButton(user.text.exams)
+            )
+    except Exception:
+        # If exams not set up yet, ignore silently
+        pass
     keyboard_markup.add(
         types.KeyboardButton(
             user.text.subscription,

@@ -38,6 +38,10 @@ class USER:
 
         GETTING_COMMENT = '5'
 
+        EXAM_PROMPT_PHONE = '6'
+        SELECT_EXAM = '7'
+        EXAM_IN_PROGRESS = '8'
+
         GETTING_POST_MESSAGE = '100'
 
         DICT = {
@@ -46,6 +50,9 @@ class USER:
             GETTING_FULL_NAME: "Getting full name",
             GETTING_PHONE_NUMBER: "Getting phone number",
             GETTING_POST_MESSAGE: "Getting post message",
+            EXAM_PROMPT_PHONE: "Exam phone prompt",
+            SELECT_EXAM: "Select exam",
+            EXAM_IN_PROGRESS: "Exam in progress",
         }
 
         CHOICES = list(DICT.items())

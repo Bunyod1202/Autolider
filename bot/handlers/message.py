@@ -7,11 +7,13 @@ from telebot import types, TeleBot
 
 from bot.utils.constants import USER, LANGUAGE, CONSTANT
 from bot.utils.helpers import extract_full_name, get_keyboard_markup, sending_post, is_phone_number, get_constant, \
-    get_main_keyboard_markup
+    get_main_keyboard_markup, normalize_phone_number
 from bot.models import Text
 from payments.models import Provider, Payment
 from subscriptions.models import Tariff, Subscription
 from users.models import User, Log
+from tests.models import Exam, ExamAccess, ExamAttempt, AttemptQuestion
+from quizzes.models import Option, Quiz, Theme
 
 reply_keyboard_remove = types.ReplyKeyboardRemove()
 
@@ -162,6 +164,29 @@ def initializer_message_handlers(_: TeleBot):
     @_.message_handler(func=lambda message: True)
     @auth
     def all_message_handler(message: types.Message, user: User, bot: TeleBot = _):
+        # Exams: entry from main
+        if user.check_step(USER.STEP.MAIN) and message.text == getattr(user.text, 'exams', 'Stat test'):
+            if not user.phone_number:
+                user.set_step(USER.STEP.EXAM_PROMPT_PHONE)
+                bot.send_message(
+                    message.chat.id,
+                    getattr(user.text, 'enter_phone_for_exam', 'Telefon raqamingizni kiriting'),
+                    reply_markup=get_keyboard_markup([user.text.back, ])
+                )
+            else:
+                accesses = ExamAccess.objects.filter(user=user, exam__is_active=True).select_related('exam').order_by('exam__date')
+                if not accesses.exists():
+                    bot.send_message(message.chat.id, getattr(user.text, 'no_exam_access', 'Sizga imtihon ruxsati berilmagan'))
+                    return
+                user.set_step(USER.STEP.SELECT_EXAM)
+                buttons = [[f"ID{acc.exam.id} — {acc.exam.title} — {acc.exam.date.strftime('%d.%m.%Y %H:%M')}"] for acc in accesses]
+                buttons.append(user.text.back)
+                bot.send_message(
+                    message.chat.id,
+                    getattr(user.text, 'choose_exam', 'Imtihonni tanlang'),
+                    reply_markup=get_keyboard_markup(buttons)
+                )
+            return
         if user.check_step(USER.STEP.GETTING_POST_MESSAGE) and user.is_admin:
             user.set_step()
             bot.reply_to(
@@ -222,6 +247,141 @@ def initializer_message_handlers(_: TeleBot):
             bot.send_message(
                 message.chat.id,
                 user.text.comments_sent,
+                reply_markup=reply_keyboard_remove,
+            )
+            go_to_main(message, user)
+        elif user.check_step(USER.STEP.EXAM_PROMPT_PHONE):
+            normalized = normalize_phone_number(message.text)
+            if normalized:
+                user.phone_number = normalized
+                user.set_step()
+                accesses = ExamAccess.objects.filter(user=user, exam__is_active=True).select_related('exam').order_by('exam__date')
+                if not accesses.exists():
+                    bot.send_message(message.chat.id, getattr(user.text, 'no_exam_access', 'Sizga imtihon ruxsati berilmagan'))
+                    go_to_main(message, user)
+                    return
+                user.set_step(USER.STEP.SELECT_EXAM)
+                buttons = [[f"ID{acc.exam.id} — {acc.exam.title} — {acc.exam.date.strftime('%d.%m.%Y %H:%M')}"] for acc in accesses]
+                buttons.append(user.text.back)
+                bot.send_message(
+                    message.chat.id,
+                    getattr(user.text, 'choose_exam', 'Imtihonni tanlang'),
+                    reply_markup=get_keyboard_markup(buttons)
+                )
+            else:
+                bot.send_message(
+                    message.chat.id,
+                    getattr(user.text, 'enter_phone_for_exam', 'Telefon raqamingizni kiriting'),
+                    reply_markup=get_keyboard_markup([user.text.back, ])
+                )
+        elif user.check_step(USER.STEP.SELECT_EXAM):
+            import re
+            m = re.match(r"^ID(\d+)\b", message.text or '')
+            if not m:
+                accesses = ExamAccess.objects.filter(user=user, exam__is_active=True).select_related('exam').order_by('exam__date')
+                if not accesses.exists():
+                    bot.send_message(message.chat.id, getattr(user.text, 'no_exam_access', 'Sizga imtihon ruxsati berilmagan'))
+                    go_to_main(message, user)
+                    return
+                buttons = [[f"ID{acc.exam.id} — {acc.exam.title} — {acc.exam.date.strftime('%d.%m.%Y %H:%M')}"] for acc in accesses]
+                buttons.append(user.text.back)
+                bot.send_message(
+                    message.chat.id,
+                    getattr(user.text, 'choose_exam', 'Imtihonni tanlang'),
+                    reply_markup=get_keyboard_markup(buttons)
+                )
+                return
+            exam_id = int(m.group(1))
+            try:
+                exam = Exam.objects.get(id=exam_id, is_active=True)
+            except Exam.DoesNotExist:
+                bot.send_message(message.chat.id, getattr(user.text, 'no_exam_access', 'Sizga imtihon ruxsati berilmagan'))
+                go_to_main(message, user)
+                return
+            attempt = ExamAttempt.objects.filter(exam=exam, user=user, finished_at__isnull=True).first()
+            if not attempt:
+                if exam.type == Exam.Type.FINAL:
+                    pool = list(Quiz.objects.filter(is_active=True))
+                else:
+                    pool = list(Quiz.objects.filter(is_active=True, theme__in=exam.topics.all()))
+                if len(pool) < exam.question_count:
+                    bot.send_message(message.chat.id, getattr(user.text, 'insufficient_questions', 'Savollar yetarli emas'))
+                    try:
+                        from bot.utils.constants import CHAT_ID_FOR_NOTIFIER
+                        bot.send_message(CHAT_ID_FOR_NOTIFIER, f"Exam {exam.title}: Not enough questions ({len(pool)}/{exam.question_count})")
+                    except Exception:
+                        pass
+                    go_to_main(message, user)
+                    return
+                import random
+                selected = random.sample(pool, exam.question_count)
+                attempt = ExamAttempt.objects.create(
+                    exam=exam,
+                    user=user,
+                    total_questions=exam.question_count,
+                )
+                AttemptQuestion.objects.bulk_create([
+                    AttemptQuestion(attempt=attempt, question=q, order=i + 1) for i, q in enumerate(selected)
+                ])
+            unanswered = attempt.attempt_questions.filter(user_answer__isnull=True).order_by('order').first()
+            if not unanswered:
+                bot.send_message(message.chat.id, "Ushbu imtihon yakunlangan.")
+                go_to_main(message, user)
+                return
+            user.set_step(USER.STEP.EXAM_IN_PROGRESS, str(attempt.id))
+            quiz = unanswered.question
+            opts = [opt.text(user.text.language) for opt in quiz.options.all()]
+            bot.send_message(
+                message.chat.id,
+                f"Savol {unanswered.order}/{attempt.total_questions}:\n\n{quiz.question(user.text.language)}",
+                reply_markup=get_keyboard_markup([[t] for t in opts] + [user.text.back])
+            )
+        elif user.check_step(USER.STEP.EXAM_IN_PROGRESS):
+            try:
+                attempt_id = int((user.data or '').split()[0])
+                attempt = ExamAttempt.objects.get(id=attempt_id, user=user)
+            except Exception:
+                go_to_main(message, user)
+                return
+            current_q = attempt.attempt_questions.filter(user_answer__isnull=True).order_by('order').first()
+            if not current_q:
+                go_to_main(message, user)
+                return
+            chosen = None
+            for opt in current_q.question.options.all():
+                if opt.text(user.text.language) == message.text:
+                    chosen = opt
+                    break
+            if chosen is None:
+                opts = [opt.text(user.text.language) for opt in current_q.question.options.all()]
+                bot.send_message(
+                    message.chat.id,
+                    f"Savol {current_q.order}/{attempt.total_questions}:\n\n{current_q.question.question(user.text.language)}",
+                    reply_markup=get_keyboard_markup([[t] for t in opts] + [user.text.back])
+                )
+                return
+            current_q.user_answer = chosen
+            current_q.is_correct = bool(chosen.is_correct)
+            current_q.save(update_fields=['user_answer', 'is_correct'])
+            next_q = attempt.attempt_questions.filter(user_answer__isnull=True).order_by('order').first()
+            if next_q:
+                opts = [opt.text(user.text.language) for opt in next_q.question.options.all()]
+                bot.send_message(
+                    message.chat.id,
+                    f"Savol {next_q.order}/{attempt.total_questions}:\n\n{next_q.question.question(user.text.language)}",
+                    reply_markup=get_keyboard_markup([[t] for t in opts] + [user.text.back])
+                )
+                return
+            from django.utils import timezone as _tz
+            attempt.correct_count = attempt.attempt_questions.filter(is_correct=True).count()
+            attempt.wrong_count = attempt.total_questions - attempt.correct_count
+            attempt.finished_at = _tz.now()
+            attempt.spent_time = int((attempt.finished_at - attempt.started_at).total_seconds())
+            attempt.save(update_fields=['correct_count', 'wrong_count', 'finished_at', 'spent_time'])
+            user.set_step()
+            bot.send_message(
+                message.chat.id,
+                f"Natija:\nTo'g'ri: {attempt.correct_count}\nNoto'g'ri: {attempt.wrong_count}\nJami: {attempt.total_questions}\nVaqt: {attempt.spent_time} sekund",
                 reply_markup=reply_keyboard_remove,
             )
             go_to_main(message, user)

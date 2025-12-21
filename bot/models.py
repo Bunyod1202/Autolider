@@ -188,6 +188,27 @@ class Text(models.Model):
         max_length=63,
         default="Davom etish",
     )
+    exams = models.CharField(
+        max_length=63,
+        default="Stat test",
+    )
+    # Exams flow
+    enter_phone_for_exam = models.CharField(
+        max_length=255,
+        default="Telefon raqamingizni kiriting (masalan: 901234567 yoki +998901234567)",
+    )
+    no_exam_access = models.CharField(
+        max_length=255,
+        default="Sizga imtihon ruxsati berilmagan",
+    )
+    choose_exam = models.CharField(
+        max_length=255,
+        default="Imtihonni tanlang",
+    )
+    insufficient_questions = models.CharField(
+        max_length=255,
+        default="Savollar yetarli emas",
+    )
     added_time = models.DateTimeField(
         auto_now_add=True,
     )

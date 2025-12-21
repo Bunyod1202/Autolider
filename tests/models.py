@@ -57,3 +57,68 @@ class Test(models.Model):
 
     def __str__(self):
         return f"{self.user}'s ID{self.id} test: {self.correct_answers_count}/{self.quizzes_count} in {self.spent_seconds} seconds."
+
+
+class Exam(models.Model):
+    class Type(models.TextChoices):
+        MID_1 = 'MID_1', 'Oraliq imtihon 1'
+        MID_2 = 'MID_2', 'Oraliq imtihon 2'
+        MID_3 = 'MID_3', 'Oraliq imtihon 3'
+        FINAL = 'FINAL', 'Yakuniy imtihon'
+
+    title = models.CharField(max_length=255)
+    type = models.CharField(max_length=8, choices=Type.choices)
+    date = models.DateTimeField()
+    question_count = models.PositiveSmallIntegerField(default=20)
+    topics = models.ManyToManyField(
+        'quizzes.Theme', blank=True, related_name='exams'
+    )
+    allowed_users = models.ManyToManyField(
+        'users.User', through='tests.ExamAccess', related_name='allowed_exams', blank=True
+    )
+    is_active = models.BooleanField(default=True)
+    added_time = models.DateTimeField(auto_now_add=True)
+    last_updated_time = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.title} ({self.get_type_display()})"
+
+
+class ExamAccess(models.Model):
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='accesses')
+    user = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='exam_accesses')
+
+    class Meta:
+        unique_together = ('exam', 'user')
+
+    def __str__(self):
+        return f"{self.user} → {self.exam}"
+
+
+class ExamAttempt(models.Model):
+    exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='attempts')
+    user = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='exam_attempts')
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    correct_count = models.PositiveSmallIntegerField(default=0)
+    wrong_count = models.PositiveSmallIntegerField(default=0)
+    total_questions = models.PositiveSmallIntegerField(default=0)
+    spent_time = models.PositiveIntegerField(default=0)  # seconds
+
+    def __str__(self):
+        return f"Attempt #{self.id} by {self.user} for {self.exam}"
+
+
+class AttemptQuestion(models.Model):
+    attempt = models.ForeignKey(ExamAttempt, on_delete=models.CASCADE, related_name='attempt_questions')
+    question = models.ForeignKey('quizzes.Quiz', on_delete=models.CASCADE)
+    order = models.PositiveSmallIntegerField()
+    user_answer = models.ForeignKey('quizzes.Option', null=True, blank=True, on_delete=models.SET_NULL)
+    is_correct = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('attempt', 'question')
+        ordering = ['order']
+
+    def __str__(self):
+        return f"Attempt {self.attempt_id} Q{self.order}: {self.question_id}"
