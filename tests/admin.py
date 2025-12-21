@@ -109,7 +109,8 @@ class AttemptQuestionInline(admin.TabularInline):
     extra = 0
     fields = ['order', 'question', 'user_answer', 'is_correct']
     readonly_fields = []
-    autocomplete_fields = ['question', 'user_answer']
+    # Use raw_id_fields to avoid requiring Option admin registration
+    raw_id_fields = ['question', 'user_answer']
 
 
 @admin.register(models.ExamAttempt)
