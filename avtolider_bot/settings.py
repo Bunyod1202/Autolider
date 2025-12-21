@@ -50,7 +50,7 @@ INSTALLED_APPS = [
     'payments',
     'subscriptions.apps.SubscriptionsConfig',
     'quizzes',
-    'tests',
+    'tests.apps.TestsConfig',
 ]
 
 MIDDLEWARE = [

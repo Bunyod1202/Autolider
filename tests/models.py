@@ -83,6 +83,10 @@ class Exam(models.Model):
     def __str__(self):
         return f"{self.title} ({self.get_type_display()})"
 
+    class Meta:
+        verbose_name = 'Imtihon'
+        verbose_name_plural = 'Imtihonlar'
+
 
 class ExamAccess(models.Model):
     exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='accesses')
@@ -93,6 +97,10 @@ class ExamAccess(models.Model):
 
     def __str__(self):
         return f"{self.user} → {self.exam}"
+
+    class Meta:
+        verbose_name = 'Imtihon ruxsati'
+        verbose_name_plural = 'Imtihon ruxsatlari'
 
 
 class ExamAttempt(models.Model):
@@ -108,6 +116,10 @@ class ExamAttempt(models.Model):
     def __str__(self):
         return f"Attempt #{self.id} by {self.user} for {self.exam}"
 
+    class Meta:
+        verbose_name = 'Imtihon urinish'
+        verbose_name_plural = 'Imtihon urinishlari'
+
 
 class AttemptQuestion(models.Model):
     attempt = models.ForeignKey(ExamAttempt, on_delete=models.CASCADE, related_name='attempt_questions')
@@ -119,6 +131,8 @@ class AttemptQuestion(models.Model):
     class Meta:
         unique_together = ('attempt', 'question')
         ordering = ['order']
+        verbose_name = 'Urinish savoli'
+        verbose_name_plural = 'Urinish savollari'
 
     def __str__(self):
         return f"Attempt {self.attempt_id} Q{self.order}: {self.question_id}"
