@@ -76,9 +76,8 @@ def get_main_keyboard_markup(user):
         from tests.models import ExamAccess
         has_access = bool(user.phone_number) and ExamAccess.objects.filter(user=user, exam__is_active=True).exists()
         if has_access:
-            keyboard_markup.add(
-                types.KeyboardButton(user.text.exams)
-            )
+            label = getattr(user.text, 'exams', 'Stat test')
+            keyboard_markup.add(types.KeyboardButton(label))
     except Exception:
         # If exams not set up yet, ignore silently
         pass
