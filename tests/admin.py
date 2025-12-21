@@ -59,7 +59,7 @@ class ExamAdmin(admin.ModelAdmin):
         'id', 'title', 'type', 'date', 'question_count', 'is_active', 'added_time', 'last_updated_time'
     ]
     list_filter = ['type', 'is_active']
-    filter_horizontal = ['topics', 'allowed_users']
+    filter_horizontal = ['topics']
     search_fields = ['title']
     readonly_fields = ['added_time', 'last_updated_time']
 
@@ -71,11 +71,10 @@ class ExamAdmin(admin.ModelAdmin):
             'fields': ('topics',),
             'description': 'MID imtihonlarida mavzularni tanlang. FINAL uchun bu qism e’tiborga olinmaydi.'
         }),
-        ('Ruxsat berilgan foydalanuvchilar', {
-            'fields': ('allowed_users',),
-            'description': 'Bu yerda tanlangan foydalanuvchilarga ushbu imtihon FAOLLASHTIRILADI (ExamAccess orqali).'
-        })
+        # Users are managed via inline ExamAccess rows for reliability with through model
     )
+
+    inlines = []
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
@@ -103,6 +102,15 @@ class ExamAccessAdmin(admin.ModelAdmin):
     list_filter = ['exam']
     search_fields = ['user__full_name', 'user__telegram_id', 'exam__title']
     autocomplete_fields = ['exam', 'user']
+
+
+class ExamAccessInline(admin.TabularInline):
+    model = models.ExamAccess
+    extra = 0
+    autocomplete_fields = ['user']
+
+# attach inline to ExamAdmin
+ExamAdmin.inlines.append(ExamAccessInline)
 
 
 class AttemptQuestionInline(admin.TabularInline):
