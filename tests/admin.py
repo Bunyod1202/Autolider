@@ -61,6 +61,24 @@ class ExamAdmin(admin.ModelAdmin):
         except Exception:
             pass
 
+        # Fallback: agar yuqorida order diapazoni bo'yicha topilmasa va topics hamon bo'sh bo'lsa,
+        # aktiv temalarni (order, id) bo'yicha ketma-ketlikda kesib tanlaymiz.
+        try:
+            from quizzes.models import Theme
+            if obj.topics.count() == 0 and obj.type in (models.Exam.Type.MID_1, models.Exam.Type.MID_2, models.Exam.Type.MID_3):
+                if obj.type == models.Exam.Type.MID_1:
+                    a, b = 1, 11
+                elif obj.type == models.Exam.Type.MID_2:
+                    a, b = 12, 22
+                else:
+                    a, b = 23, 29
+                active = list(Theme.objects.filter(is_active=True).order_by('order', 'id'))
+                selected = [t for i, t in enumerate(active, start=1) if a <= i <= b]
+                if selected:
+                    obj.topics.add(*selected)
+        except Exception:
+            pass
+
 
 class ExamAccessAdmin(admin.ModelAdmin):
     list_display = ['id', 'exam', 'user']
