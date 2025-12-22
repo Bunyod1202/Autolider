@@ -13,6 +13,7 @@ from bot.utils.constants import TOKEN
 from threading import Thread
 
 from bot.utils.constants import CONSTANT, BASE_URL
+from django.utils import timezone
 
 
 def is_phone_number(raw: str):
@@ -71,13 +72,23 @@ def get_main_keyboard_markup(user):
             ),
         ),
     )
-    # Conditionally show Exams button only if user has phone and admin granted access
+    # Start/Exam buttons logic (time + access + phone)
     try:
         from tests.models import ExamAccess
-        has_access = bool(user.phone_number) and ExamAccess.objects.filter(user=user, exam__is_active=True).exists()
-        if has_access:
-            label = getattr(user.text, 'exams', 'Stat test')
-            keyboard_markup.add(types.KeyboardButton(label))
+        now = timezone.now()
+        # user has at least one active exam that has started
+        started_access = ExamAccess.objects.filter(
+            user=user, exam__is_active=True, exam__date__lte=now
+        ).exists()
+        if started_access:
+            if user.phone_number:
+                # Show Stat test only after phone login
+                label = getattr(user.text, 'exams', 'Stat test')
+                keyboard_markup.add(types.KeyboardButton(label))
+            else:
+                # Show Start exam to trigger manual login
+                start_label = getattr(user.text, 'start_exam', 'Start exam')
+                keyboard_markup.add(types.KeyboardButton(start_label))
     except Exception:
         # If exams not set up yet, ignore silently
         pass

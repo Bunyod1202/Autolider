@@ -164,8 +164,10 @@ def initializer_message_handlers(_: TeleBot):
     @_.message_handler(func=lambda message: True)
     @auth
     def all_message_handler(message: types.Message, user: User, bot: TeleBot = _):
-        # Exams: entry from main
-        if user.check_step(USER.STEP.MAIN) and message.text == getattr(user.text, 'exams', 'Stat test'):
+        # Exams: entry from main via Stat test or Start exam
+        exams_label = getattr(user.text, 'exams', 'Stat test')
+        start_label = getattr(user.text, 'start_exam', 'Start exam')
+        if user.check_step(USER.STEP.MAIN) and message.text in (exams_label, start_label):
             if not user.phone_number:
                 user.set_step(USER.STEP.EXAM_PROMPT_PHONE)
                 bot.send_message(
@@ -255,19 +257,20 @@ def initializer_message_handlers(_: TeleBot):
             if normalized:
                 user.phone_number = normalized
                 user.set_step()
+                # After login, main menu will show Stat test; also offer direct exam list
                 accesses = ExamAccess.objects.filter(user=user, exam__is_active=True).select_related('exam').order_by('exam__date')
-                if not accesses.exists():
+                if accesses.exists():
+                    user.set_step(USER.STEP.SELECT_EXAM)
+                    buttons = [[f"ID{acc.exam.id} — {acc.exam.title} — {acc.exam.date.strftime('%d.%m.%Y %H:%M')}"] for acc in accesses]
+                    buttons.append(user.text.back)
+                    bot.send_message(
+                        message.chat.id,
+                        getattr(user.text, 'choose_exam', 'Imtihonni tanlang'),
+                        reply_markup=get_keyboard_markup(buttons)
+                    )
+                else:
                     bot.send_message(message.chat.id, getattr(user.text, 'no_exam_access', 'Sizga imtihon ruxsati berilmagan'))
                     go_to_main(message, user)
-                    return
-                user.set_step(USER.STEP.SELECT_EXAM)
-                buttons = [[f"ID{acc.exam.id} — {acc.exam.title} — {acc.exam.date.strftime('%d.%m.%Y %H:%M')}"] for acc in accesses]
-                buttons.append(user.text.back)
-                bot.send_message(
-                    message.chat.id,
-                    getattr(user.text, 'choose_exam', 'Imtihonni tanlang'),
-                    reply_markup=get_keyboard_markup(buttons)
-                )
             else:
                 bot.send_message(
                     message.chat.id,
