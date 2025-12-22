@@ -64,13 +64,6 @@ class Exam(models.Model):
     type = models.CharField(max_length=8, choices=Type.choices)
     date = models.DateTimeField()
     question_count = models.PositiveSmallIntegerField(default=20)
-<<<<<<< HEAD
-    topics = models.ManyToManyField(
-        'quizzes.Theme', blank=True, related_name='exams'
-    )
-    allowed_users = models.ManyToManyField(
-        'users.User', through='tests.ExamAccess', related_name='allowed_exams', blank=True
-=======
     topics = models.ManyToManyField('quizzes.Theme', blank=True, related_name='exams')
     # Admin uchun userlarni faollashtirish: through bilan
     allowed_users = models.ManyToManyField(
@@ -78,7 +71,6 @@ class Exam(models.Model):
         through='tests.ExamAccess',
         related_name='allowed_exams',
         blank=True,
->>>>>>> 009973f (fix)
     )
     is_active = models.BooleanField(default=True)
     added_time = models.DateTimeField(auto_now_add=True)
@@ -98,23 +90,12 @@ class ExamAccess(models.Model):
 
     class Meta:
         unique_together = ('exam', 'user')
-<<<<<<< HEAD
-
-    def __str__(self):
-        return f"{self.user} → {self.exam}"
-
-    class Meta:
-        verbose_name = 'Imtihon ruxsati'
-        verbose_name_plural = 'Imtihon ruxsatlari'
-
-=======
         verbose_name = 'Imtihon ruxsati'
         verbose_name_plural = 'Imtihon ruxsatlari'
 
     def __str__(self):
         return f"{self.user} -> {self.exam}"
 
->>>>>>> 009973f (fix)
 
 class ExamAttempt(models.Model):
     exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='attempts')
