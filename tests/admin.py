@@ -27,7 +27,8 @@ class AttemptQuestionInline(admin.TabularInline):
     model = models.AttemptQuestion
     extra = 0
     fields = ['order', 'question', 'user_answer', 'is_correct']
-    autocomplete_fields = ['question', 'user_answer']
+    # Avoid admin.E039 by not requiring Option admin; use raw_id_fields
+    raw_id_fields = ['question', 'user_answer']
 
 
 class ExamAdmin(admin.ModelAdmin):
