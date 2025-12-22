@@ -300,6 +300,24 @@ def exam_start_view(request, exam_id: int):
     # Resume or create attempt with random questions
     attempt = ExamAttempt.objects.filter(exam=exam, user=user, finished_at__isnull=True).first()
     if not attempt:
+        # Ensure default topics for MID types if none selected
+        if exam.type != Exam.Type.FINAL and exam.topics.count() == 0:
+            try:
+                from quizzes.models import Theme
+                if exam.type == Exam.Type.MID_1:
+                    a, b = 1, 11
+                elif exam.type == Exam.Type.MID_2:
+                    a, b = 12, 22
+                else:
+                    a, b = 23, 29
+                selected_topics = list(Theme.objects.filter(is_active=True, order__gte=a, order__lte=b))
+                if not selected_topics:
+                    active = list(Theme.objects.filter(is_active=True).order_by('order', 'id'))
+                    selected_topics = [t for i, t in enumerate(active, start=1) if a <= i <= b]
+                if selected_topics:
+                    exam.topics.add(*selected_topics)
+            except Exception:
+                pass
         # build pool
         if exam.type == Exam.Type.FINAL:
             pool = list(Quiz.objects.filter(is_active=True))

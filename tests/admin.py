@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib import messages
 from django.contrib.admin.exceptions import AlreadyRegistered
 from . import models
 
@@ -43,6 +44,46 @@ class ExamAdmin(admin.ModelAdmin):
         ('Mavzular (faqat MID uchun)', {'fields': ('topics',)}),
     )
     inlines = [ExamAccessInline]
+    actions = ["apply_default_topics_action"]
+
+    def _select_default_topics(self, exam):
+        from quizzes.models import Theme
+        if exam.type not in (models.Exam.Type.MID_1, models.Exam.Type.MID_2, models.Exam.Type.MID_3):
+            return 0
+        if exam.topics.count() > 0:
+            return 0
+        if exam.type == models.Exam.Type.MID_1:
+            a, b = 1, 11
+        elif exam.type == models.Exam.Type.MID_2:
+            a, b = 12, 22
+        else:
+            a, b = 23, 29
+        selected = list(Theme.objects.filter(is_active=True, order__gte=a, order__lte=b))
+        if not selected:
+            active = list(Theme.objects.filter(is_active=True).order_by('order', 'id'))
+            selected = [t for i, t in enumerate(active, start=1) if a <= i <= b]
+        if selected:
+            exam.topics.add(*selected)
+            return len(selected)
+        return 0
+
+    @admin.action(description="Default mavzularni qo'llash (MID uchun)")
+    def apply_default_topics_action(self, request, queryset):
+        updated = 0
+        skipped = 0
+        for exam in queryset:
+            try:
+                cnt = self._select_default_topics(exam)
+                if cnt:
+                    updated += 1
+                else:
+                    skipped += 1
+            except Exception:
+                skipped += 1
+        if updated:
+            messages.success(request, f"Default mavzular qo'llandi: {updated} ta imtihon.")
+        if skipped:
+            messages.info(request, f"O'tkazib yuborildi (mavzular bor yoki FINAL): {skipped} ta.")
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
