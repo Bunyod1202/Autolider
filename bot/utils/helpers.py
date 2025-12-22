@@ -76,19 +76,17 @@ def get_main_keyboard_markup(user):
     try:
         from tests.models import ExamAccess
         now = timezone.now()
-        # user has at least one active exam that has started
-        started_access = ExamAccess.objects.filter(
-            user=user, exam__is_active=True, exam__date__lte=now
-        ).exists()
-        if started_access:
-            if user.phone_number:
-                # Show Stat test only after phone login
-                label = getattr(user.text, 'exams', 'Stat test')
-                keyboard_markup.add(types.KeyboardButton(label))
-            else:
-                # Show Start exam to trigger manual login
-                start_label = getattr(user.text, 'start_exam', 'Start exam')
-                keyboard_markup.add(types.KeyboardButton(start_label))
+        # user has at least one active exam (may or may not have started)
+        any_access = ExamAccess.objects.filter(user=user, exam__is_active=True).exists()
+        if any_access:
+            # Always open exams WebApp; inside it we handle phone/login and timing
+            label = getattr(user.text, 'exams', 'Stat test') if user.phone_number else getattr(user.text, 'start_exam', 'Start exam')
+            keyboard_markup.add(
+                types.KeyboardButton(
+                    label,
+                    web_app=types.WebAppInfo(url=f"{BASE_URL}/bot/exams/?user_id={user.id}")
+                )
+            )
     except Exception:
         # If exams not set up yet, ignore silently
         pass

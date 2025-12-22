@@ -8,11 +8,13 @@ from bot.factory import bot_initializer
 from bot.utils.constants import TOKEN
 import re
 
-from quizzes.models import Theme, Option
+from quizzes.models import Theme, Option, Quiz
 import random
-from tests.models import Test
+from tests.models import Test, Exam, ExamAccess, ExamAttempt, AttemptQuestion
 from users.models import User
 from subscriptions.utils import refresh_user_active_status
+from bot.utils.helpers import normalize_phone_number
+from django.utils import timezone
 
 bot: TeleBot = bot_initializer(TOKEN)
 
@@ -226,3 +228,182 @@ def test_result_view(request, test_id: int):
 
 
 
+@csrf_exempt
+def exams_view(request):
+    user_id = request.GET.get('user_id')
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': f'user {user_id} not found'}, status=404)
+
+    # if phone missing, render phone form inside WebApp
+    phone_missing = not bool(user.phone_number)
+    now = timezone.now()
+    accesses = ExamAccess.objects.filter(user=user, exam__is_active=True).select_related('exam').order_by('exam__date')
+    exams = []
+    for acc in accesses:
+        ex = acc.exam
+        exams.append({
+            'id': ex.id,
+            'title': ex.title,
+            'date': ex.date.strftime('%Y-%m-%d %H:%M'),
+            'started': ex.date <= now,
+            'type': ex.type,
+            'question_count': ex.question_count,
+        })
+    return render(request, 'exams.html', {
+        'user': user,
+        'phone_missing': phone_missing,
+        'exams': exams,
+    })
+
+
+@csrf_exempt
+def exams_save_phone_view(request):
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'POST required'}, status=405)
+    user_id = request.POST.get('user_id')
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': f'user {user_id} not found'}, status=404)
+    norm = normalize_phone_number(request.POST.get('phone', ''))
+    if not norm:
+        return render(request, 'exams.html', {
+            'user': user,
+            'phone_missing': True,
+            'error': 'Telefon raqam formati noto\'g\'ri',
+            'exams': [],
+        })
+    user.phone_number = norm
+    user.save(update_fields=['phone_number'])
+    return redirect(f"/bot/exams/?user_id={user.id}")
+
+
+@csrf_exempt
+def exam_start_view(request, exam_id: int):
+    user_id = request.GET.get('user_id') or request.POST.get('user_id')
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': f'user {user_id} not found'}, status=404)
+    # Access and timing checks
+    try:
+        exam = Exam.objects.get(id=exam_id, is_active=True)
+    except Exam.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Exam not found'}, status=404)
+    if not ExamAccess.objects.filter(user=user, exam=exam).exists():
+        return render(request, 'exam.html', {'user': user, 'error': 'Sizga imtihon ruxsati berilmagan'})
+    if exam.date > timezone.now():
+        return render(request, 'exam.html', {'user': user, 'error': 'Imtihon vaqti hali boshlanmagan'})
+
+    # Resume or create attempt with random questions
+    attempt = ExamAttempt.objects.filter(exam=exam, user=user, finished_at__isnull=True).first()
+    if not attempt:
+        # build pool
+        if exam.type == Exam.Type.FINAL:
+            pool = list(Quiz.objects.filter(is_active=True))
+        else:
+            pool = list(Quiz.objects.filter(is_active=True, theme__in=exam.topics.all()))
+        if len(pool) < exam.question_count:
+            return render(request, 'exam.html', {'user': user, 'error': 'Savollar yetarli emas'})
+        selected = random.sample(pool, exam.question_count)
+        attempt = ExamAttempt.objects.create(exam=exam, user=user, total_questions=exam.question_count)
+        AttemptQuestion.objects.bulk_create([
+            AttemptQuestion(attempt=attempt, question=q, order=i+1) for i, q in enumerate(selected)
+        ])
+
+    # Build questions data for WebApp
+    qitems = []
+    for aq in attempt.attempt_questions.select_related('question').order_by('order'):
+        quiz = aq.question
+        qitems.append({
+            'id': quiz.id,
+            'order': aq.order,
+            'question': quiz.question(user.text.language),
+            'image_url': quiz.image_url,
+            'options': [
+                {'id': opt.id, 'text': opt.text(user.text.language)} for opt in quiz.options.all()
+            ],
+            'answer_id': aq.user_answer_id or 0,
+        })
+    return render(request, 'exam.html', {
+        'user': user,
+        'attempt': attempt,
+        'exam': exam,
+        'questions': qitems,
+    })
+
+
+@csrf_exempt
+def exam_answer_view(request):
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'POST required'}, status=405)
+    user_id = request.POST.get('user_id')
+    attempt_id = request.POST.get('attempt_id')
+    qid = int(request.POST.get('question_id'))
+    oid = int(request.POST.get('option_id'))
+    try:
+        user = User.objects.get(id=user_id)
+        attempt = ExamAttempt.objects.get(id=attempt_id, user=user)
+        aq = attempt.attempt_questions.select_related('question').get(question_id=qid)
+    except Exception:
+        return JsonResponse({'ok': False, 'error': 'Not found'}, status=404)
+    from quizzes.models import Option as Opt
+    try:
+        opt = Opt.objects.get(id=oid, quiz_id=qid)
+    except Opt.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Option not found'}, status=404)
+    aq.user_answer_id = opt.id
+    aq.is_correct = bool(opt.is_correct)
+    aq.save(update_fields=['user_answer', 'is_correct'])
+    return JsonResponse({'ok': True})
+
+
+@csrf_exempt
+def exam_finish_view(request):
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'error': 'POST required'}, status=405)
+    user_id = request.POST.get('user_id')
+    attempt_id = request.POST.get('attempt_id')
+    spent_seconds = int(request.POST.get('spent_seconds', 0))
+    try:
+        user = User.objects.get(id=user_id)
+        attempt = ExamAttempt.objects.get(id=attempt_id, user=user)
+    except Exception:
+        return JsonResponse({'ok': False, 'error': 'Not found'}, status=404)
+    attempt.correct_count = attempt.attempt_questions.filter(is_correct=True).count()
+    attempt.wrong_count = attempt.total_questions - attempt.correct_count
+    attempt.spent_time = spent_seconds
+    attempt.finished_at = timezone.now()
+    attempt.save(update_fields=['correct_count', 'wrong_count', 'spent_time', 'finished_at'])
+    return JsonResponse({'ok': True, 'result_url': f"/bot/exams/result/{attempt.id}/"})
+
+
+@csrf_exempt
+def exam_result_view(request, attempt_id: int):
+    try:
+        attempt = ExamAttempt.objects.select_related('user', 'exam').get(id=attempt_id)
+    except ExamAttempt.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Not found'}, status=404)
+    user = attempt.user
+    answers = []
+    for aq in attempt.attempt_questions.select_related('question', 'user_answer').order_by('order'):
+        quiz = aq.question
+        answers.append({
+            'order': aq.order,
+            'question': quiz.question(user.text.language),
+            'image_url': quiz.image_url,
+            'options': [
+                {'id': opt.id, 'text': opt.text(user.text.language), 'is_correct': opt.is_correct}
+                for opt in quiz.options.all()
+            ],
+            'user_answer_id': aq.user_answer_id,
+            'is_correct': aq.is_correct,
+        })
+    return render(request, 'exam-result.html', {
+        'user': user,
+        'exam': attempt.exam,
+        'attempt': attempt,
+        'answers': answers,
+    })

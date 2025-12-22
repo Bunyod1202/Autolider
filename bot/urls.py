@@ -1,5 +1,6 @@
 from django.urls import path
-from bot.views import web_hook_view, help_view, theme_list_view, theme_detail_view, test_view, save_test_view, test_result_view
+from bot.views import web_hook_view, help_view, theme_list_view, theme_detail_view, test_view, save_test_view, test_result_view, \
+    exams_view, exams_save_phone_view, exam_start_view, exam_answer_view, exam_finish_view, exam_result_view
 
 urlpatterns = [
     path('help/', help_view),
@@ -8,5 +9,12 @@ urlpatterns = [
     path('test/', test_view),
     path('save-test/', save_test_view),
     path('test/<int:test_id>/', test_result_view),
+    # Exams WebApp
+    path('exams/', exams_view),
+    path('exams/save-phone/', exams_save_phone_view),
+    path('exams/<int:exam_id>/', exam_start_view),
+    path('exams/answer/', exam_answer_view),
+    path('exams/finish/', exam_finish_view),
+    path('exams/result/<int:attempt_id>/', exam_result_view),
     path('<str:token>/', web_hook_view),
 ]
