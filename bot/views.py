@@ -375,7 +375,10 @@ def exam_answer_view(request):
     aq.user_answer_id = opt.id
     aq.is_correct = bool(opt.is_correct)
     aq.save(update_fields=['user_answer', 'is_correct'])
-    return JsonResponse({'ok': True})
+    # Return correctness and the correct option id for UI feedback
+    from quizzes.models import Option as Opt2
+    correct_id = Opt2.objects.filter(quiz_id=qid, is_correct=True).values_list('id', flat=True).first() or 0
+    return JsonResponse({'ok': True, 'is_correct': bool(opt.is_correct), 'correct_option_id': int(correct_id)})
 
 
 @csrf_exempt
