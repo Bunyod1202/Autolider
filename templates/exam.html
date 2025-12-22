@@ -4,72 +4,112 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Imtihon</title>
+  <title>{{ exam.title }}</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body { background:#fff; }
+    .header-pill { border-radius: 16px; padding: 6px 12px; }
+    .timer-pill { background:#0d6efd; color:#fff; border-radius:16px; padding:6px 12px; font-weight:600; }
+    .title-center { text-align:center; font-weight:600; font-size:18px; line-height:1.3; word-break:break-word; }
+    .quiz-wrap { background:#ede7ff; border-radius:16px; padding:16px; }
+    html, body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+    img { -webkit-user-drag: none; user-drag: none; }
+    .option-btn { width:100%; border-radius:12px; text-align:left; display:flex; align-items:center; gap:12px; justify-content:flex-start; }
+    .quiz-nav .btn { border-radius:10px; min-width:40px; height:36px; display:flex; align-items:center; justify-content:center; font-weight:600; }
+    .quiz-nav .btn.btn-light { background:#ede7ff; border-color:#ede7ff; color:#111; }
+    .quiz-btn-active { background-color:#6b7280!important; border-color:#6b7280!important; color:#fff!important; }
+    .quiz-btn-answered { background-color:#22c55e!important; border-color:#22c55e!important; color:#fff!important; }
+  </style>
 </head>
 <body>
-<div class="container py-3">
-  {% if error %}
-    <div class="alert alert-danger">{{ error }}</div>
+{% if error %}
+  <div class="container py-3">
+    <div class="alert alert-danger mt-3">{{ error }}</div>
     <a class="btn btn-secondary" href="/bot/exams/?user_id={{ user.id }}">Ortga</a>
-  {% else %}
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <h6 class="mb-0">{{ exam.title }}</h6>
-      <span id="timer" class="badge bg-primary">00:00:00</span>
+  </div>
+{% else %}
+  <div class="fixed-top" id="header" style="background-color:#ffffff;">
+    <div class="container">
+      <div class="d-flex align-items-center justify-content-between py-3">
+        <a href="/bot/exams/?user_id={{ user.id }}" class="btn btn-light btn-sm header-pill" style="border:2px solid #0b5ed7; color:#111;">Ortga</a>
+        <span id="timer" class="timer-pill">00:00:00</span>
+      </div>
+      <div class="title-center mb-1">{{ exam.title }}</div>
     </div>
-    <div id="quiz"></div>
+  </div>
+  <div class="container" id="body" style="margin-top:90px;">
+    <div class="quiz-wrap">
+      <div id="quiz"></div>
+    </div>
     <div class="d-flex justify-content-between mt-3">
       <button class="btn btn-outline-secondary" id="prevBtn">Oldingi</button>
       <button class="btn btn-primary" id="nextBtn">Keyingi</button>
     </div>
-  {% endif %}
-</div>
+    <div class="quiz-nav mt-3">
+      <div id="nav" class="quiz-nav-scroll d-flex gap-2"></div>
+    </div>
+  </div>
+{% endif %}
 
 <script>
-const webApp = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
-if (webApp) { try{ webApp.expand(); }catch(e){} }
+  const webApp = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+  if (webApp) { try{ webApp.expand(); }catch(e){} }
 
-const userId = "{{ user.id }}";
-const attemptId = "{{ attempt.id }}";
-const questions = {{ questions|safe }};
-let idx = 0; // zero-based index
-let seconds = 0; let timer = null;
+  const userId = "{{ user.id }}";
+  const attemptId = "{{ attempt.id }}";
+  const questions = {{ questions|safe }};
+  let idx = 0; // zero-based index
+  let seconds = 0; let timer = null;
 
-function fmt(n){ n = parseInt(n,10); return (n<10?"0":"")+n; }
-function renderTimer(){ const h=Math.floor(seconds/3600), m=Math.floor((seconds%3600)/60), s=seconds%60; document.getElementById('timer').innerText = `${fmt(h)}:${fmt(m)}:${fmt(s)}` }
-function startTimer(){ if (timer) return; timer=setInterval(()=>{seconds++; renderTimer();},1000) }
-startTimer();
+  function fmt(n){ n = parseInt(n,10); return (n<10?"0":"")+n; }
+  function renderTimer(){ const h=Math.floor(seconds/3600), m=Math.floor((seconds%3600)/60), s=seconds%60; document.getElementById('timer').innerText = `${fmt(h)}:${fmt(m)}:${fmt(s)}` }
+  function startTimer(){ if (timer) return; timer=setInterval(()=>{seconds++; renderTimer();},1000) }
+  startTimer();
 
-function render(){
-  const q = questions[idx];
-  const wrap = document.getElementById('quiz');
-  let html = `<div class="card"><div class="card-body">`;
-  html += `<div class='mb-2'><b>${q.order}/${questions.length}</b>. ${q.question}</div>`;
-  if(q.image_url){ html += `<img src='${q.image_url}' class='img-fluid mb-2'/>`; }
-  html += `<div>`;
-  q.options.forEach(o=>{
-    const active = (q.answer_id && q.answer_id===o.id) ? 'active' : '';
-    html += `<button class='btn btn-light w-100 text-start mb-2 ${active}' data-oid='${o.id}' onclick='choose(${q.id},${o.id})'>${o.text}</button>`;
-  });
-  html += `</div></div></div>`;
-  wrap.innerHTML = html;
-  document.getElementById('prevBtn').disabled = (idx===0);
-  document.getElementById('nextBtn').innerText = (idx===questions.length-1) ? 'Yakunlash' : 'Keyingi';
-}
+  function buildNav(){
+    const nav = document.getElementById('nav');
+    if(!nav) return;
+    nav.innerHTML = '';
+    questions.forEach((q, i)=>{
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-sm ' + (q.answer_id? 'quiz-btn-answered' : 'btn-light');
+      if(i===idx) btn.className = 'btn btn-sm quiz-btn-active';
+      btn.textContent = q.order;
+      btn.onclick = ()=>{ idx=i; render(); };
+      nav.appendChild(btn);
+    });
+  }
 
-async function choose(qid, oid){
-  const q = questions[idx];
-  q.answer_id = oid;
-  try{
-    await fetch('/bot/exams/answer/', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams({user_id:userId, attempt_id:attemptId, question_id:qid, option_id:oid})});
-  }catch(e){ console.error(e); }
-  render();
-}
+  function render(){
+    const q = questions[idx];
+    const wrap = document.getElementById('quiz');
+    let html = ``;
+    html += `<div class='mb-2 text-muted' style='font-size:12px;'>${q.order}/${questions.length}</div>`;
+    html += `<h6 class='mb-2'>${q.question}</h6>`;
+    if(q.image_url){ html += `<img src='${q.image_url}' class='img-fluid mb-2' style='border-radius:12px;'/>`; }
+    q.options.forEach(o=>{
+      const active = (q.answer_id && q.answer_id===o.id) ? 'option-active' : '';
+      html += `<button class='btn btn-light w-100 text-start mb-2 option-btn ${active}' onclick='choose(${q.id},${o.id})'>${o.text}</button>`;
+    });
+    wrap.innerHTML = html;
+    document.getElementById('prevBtn').disabled = (idx===0);
+    document.getElementById('nextBtn').innerText = (idx===questions.length-1) ? 'Yakunlash' : 'Keyingi';
+    buildNav();
+  }
 
-document.getElementById('prevBtn').onclick = ()=>{ if(idx>0){ idx--; render(); }};
-document.getElementById('nextBtn').onclick = async ()=>{
-  if(idx < questions.length-1){ idx++; render(); return; }
+  async function choose(qid, oid){
+    const q = questions[idx];
+    q.answer_id = oid;
+    try{
+      await fetch('/bot/exams/answer/', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams({user_id:userId, attempt_id:attemptId, question_id:qid, option_id:oid})});
+    }catch(e){ console.error(e); }
+    render();
+  }
+
+  document.getElementById('prevBtn').onclick = ()=>{ if(idx>0){ idx--; render(); }};
+  document.getElementById('nextBtn').onclick = async ()=>{
+    if(idx < questions.length-1){ idx++; render(); return; }
   // Finish
   try{
     const res = await fetch('/bot/exams/finish/', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:new URLSearchParams({user_id:userId, attempt_id:attemptId, spent_seconds:seconds})});
@@ -78,8 +118,9 @@ document.getElementById('nextBtn').onclick = async ()=>{
   }catch(e){ console.error(e); }
 };
 
-render();
+  // adjust body margin below fixed header
+  (function(){ try{ document.getElementById('body').style.marginTop = document.getElementById('header').offsetHeight + 'px'; }catch(e){} })();
+  render();
 </script>
 </body>
 </html>
-
