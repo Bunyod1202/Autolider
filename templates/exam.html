@@ -52,14 +52,16 @@
   </div>
 {% endif %}
 
+{# Provide questions JSON outside JS block to avoid closing the script prematurely #}
+{{ questions|json_script:"questions-data" }}
+
 <script>
   const webApp = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
   if (webApp) { try{ webApp.expand(); }catch(e){} }
 
   const userId = "{{ user.id }}";
   const attemptId = "{{ attempt.id }}";
-  {{ questions|json_script:"questions-data" }}
-  const questions = JSON.parse(document.getElementById('questions-data').textContent || '[]');
+  const questions = JSON.parse((document.getElementById('questions-data')||{}).textContent || '[]');
   let idx = 0; // zero-based index
   let seconds = 0; let timer = null;
 
