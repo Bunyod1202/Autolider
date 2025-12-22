@@ -36,7 +36,7 @@
     <div class="container">
       <div class="d-flex align-items-center justify-content-between mt-3">
         <a class="btn btn-light btn-sm back-btn" href="/bot/exams/?user_id={{ user.id }}">Ortga</a>
-        <div class="ring" id="ring" data-correct="{{ attempt.correct_count }}" data-total="{{ attempt.total_questions }}">
+        <div class="ring" id="ring" data-correct="{{ attempt.correct_count }}" data-total="{{ attempt.total_questions }}" data-pct="{{ percent }}">
           <svg width="54" height="54" viewBox="0 0 54 54">
             <circle class="bg" cx="27" cy="27" r="23" fill="none" stroke-width="6" pathLength="150" stroke-dasharray="150 150" />
             <circle class="fg" cx="27" cy="27" r="23" fill="none" stroke-width="6" stroke-linecap="round" pathLength="150" stroke-dasharray="150 150" stroke-dashoffset="150" />
@@ -52,7 +52,7 @@
           <div class="col-6 col-md-3"><div class="bg-white rounded p-2">To'g'ri: <b>{{ attempt.correct_count }}</b></div></div>
           <div class="col-6 col-md-3"><div class="bg-white rounded p-2">Noto'g'ri: <b>{{ attempt.wrong_count }}</b></div></div>
           <div class="col-6 col-md-3"><div class="bg-white rounded p-2">Jami: <b>{{ attempt.total_questions }}</b></div></div>
-          <div class="col-6 col-md-3"><div class="bg-white rounded p-2">Vaqt (sek): <b>{{ attempt.spent_time }}</b></div></div>
+          <div class="col-6 col-md-3"><div class="bg-white rounded p-2">Ketgan vaqt: <b>{{ spent_time_text }}</b></div></div>
         </div>
       </div>
 
@@ -80,7 +80,8 @@
         const r = document.getElementById('ring'); if(!r) return;
         const correct = parseFloat(r.getAttribute('data-correct'))||0;
         const total = parseFloat(r.getAttribute('data-total'))||0;
-        const pct = total>0 ? Math.round((correct/total)*100) : 0;
+        let pct = parseInt(r.getAttribute('data-pct'), 10);
+        if(isNaN(pct)) { pct = total>0 ? Math.round((correct/total)*100) : 0; }
         const radius = 23, C = 2*Math.PI*radius;
         const fg = r.querySelector('.fg');
         fg.setAttribute('stroke-dasharray', C+' '+C);

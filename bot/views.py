@@ -416,6 +416,21 @@ def exam_result_view(request, attempt_id: int):
     except ExamAttempt.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'Not found'}, status=404)
     user = attempt.user
+    # Compute friendly spent time and percent on server for accuracy
+    h = attempt.spent_time // 3600
+    m = (attempt.spent_time % 3600) // 60
+    s = attempt.spent_time % 60
+    parts = []
+    if h:
+        parts.append(user.text.left_hours.format(hours=h))
+    if m:
+        parts.append(user.text.left_minutes.format(minutes=m))
+    if s or not parts:
+        parts.append(user.text.left_seconds.format(seconds=s))
+    parts.append(user.text.left)
+    spent_time_text = " ".join(parts)
+    total = attempt.total_questions or 0
+    percent = int(round((attempt.correct_count * 100 / total), 0)) if total else 0
     answers = []
     for aq in attempt.attempt_questions.select_related('question', 'user_answer').order_by('order'):
         quiz = aq.question
@@ -434,5 +449,7 @@ def exam_result_view(request, attempt_id: int):
         'user': user,
         'exam': attempt.exam,
         'attempt': attempt,
+        'percent': percent,
+        'spent_time_text': spent_time_text,
         'answers': answers,
     })
