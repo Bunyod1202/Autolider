@@ -87,6 +87,7 @@ class Exam(models.Model):
 class ExamAccess(models.Model):
     exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='accesses')
     user = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='exam_accesses')
+    max_attempts = models.PositiveSmallIntegerField(default=1)
 
     class Meta:
         unique_together = ('exam', 'user')

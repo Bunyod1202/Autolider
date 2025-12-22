@@ -122,7 +122,7 @@ class ExamAdmin(admin.ModelAdmin):
 
 
 class ExamAccessAdmin(admin.ModelAdmin):
-    list_display = ['id', 'exam', 'user']
+    list_display = ['id', 'exam', 'user', 'max_attempts']
     list_filter = ['exam', 'user']
     search_fields = ['user__full_name', 'user__telegram_id', 'exam__title']
     autocomplete_fields = ['exam', 'user']

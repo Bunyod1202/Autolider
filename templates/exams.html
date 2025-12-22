@@ -31,8 +31,10 @@
             <div class="fw-semibold">{{ ex.title }}</div>
             <small class="text-muted">{{ ex.date }} · {{ ex.question_count }} ta</small>
           </div>
-          {% if ex.started and not phone_missing %}
+          {% if ex.started and not phone_missing and ex.allowed %}
             <a class="btn btn-success" href="/bot/exams/{{ ex.id }}/?user_id={{ user.id }}">Boshlash</a>
+          {% elif ex.started and not phone_missing and not ex.allowed %}
+            <span class="badge bg-secondary">Qayta topshirish uchun ruxsat kerak</span>
           {% elif not ex.started %}
             <span class="badge bg-secondary">Vaqti kelmagan</span>
           {% else %}
@@ -56,4 +58,3 @@
 </script>
 </body>
 </html>
-

@@ -243,6 +243,8 @@ def exams_view(request):
     exams = []
     for acc in accesses:
         ex = acc.exam
+        attempts_done = ExamAttempt.objects.filter(exam=ex, user=user, finished_at__isnull=False).count()
+        allowed = attempts_done < (acc.max_attempts or 1)
         exams.append({
             'id': ex.id,
             'title': ex.title,
@@ -250,6 +252,7 @@ def exams_view(request):
             'started': ex.date <= now,
             'type': ex.type,
             'question_count': ex.question_count,
+            'allowed': allowed,
         })
     return render(request, 'exams.html', {
         'user': user,
@@ -292,8 +295,13 @@ def exam_start_view(request, exam_id: int):
         exam = Exam.objects.get(id=exam_id, is_active=True)
     except Exam.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'Exam not found'}, status=404)
-    if not ExamAccess.objects.filter(user=user, exam=exam).exists():
+    acc = ExamAccess.objects.filter(user=user, exam=exam).first()
+    if not acc:
         return render(request, 'exam.html', {'user': user, 'error': 'Sizga imtihon ruxsati berilmagan'})
+    # Enforce attempts limit
+    done = ExamAttempt.objects.filter(exam=exam, user=user, finished_at__isnull=False).count()
+    if done >= (acc.max_attempts or 1):
+        return render(request, 'exam.html', {'user': user, 'error': 'Bu imtihonni qayta topshirish uchun admin ruxsati kerak'})
     if exam.date > timezone.now():
         return render(request, 'exam.html', {'user': user, 'error': 'Imtihon vaqti hali boshlanmagan'})
 
