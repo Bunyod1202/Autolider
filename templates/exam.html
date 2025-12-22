@@ -15,14 +15,15 @@
     .question-wrap { background:#f2ecff; border-radius:16px; padding:16px; }
     html, body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
     img { -webkit-user-drag: none; user-drag: none; }
-    .option-btn { width:100%; border-radius:16px; text-align:left; display:flex; align-items:center; gap:12px; justify-content:flex-start; background:#fff; border:0; padding:10px 12px; }
+    .option-btn { width:100%; border-radius:16px; text-align:left; display:flex; align-items:center; gap:12px; justify-content:flex-start; background:#fff; border:2px solid transparent; padding:10px 12px; transition: background .15s ease, border-color .15s ease; }
     .option-index { width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; background:#eef2f7; color:#333; font-weight:600; }
-    .option-active { background:#e9ecef !important; }
+    .option-active { background:#eef6ff !important; border-color:#0d6efd !important; }
     .quiz-nav .btn { border-radius:12px; min-width:44px; height:44px; display:flex; align-items:center; justify-content:center; font-weight:700; }
     .quiz-nav .btn.btn-light { background:#ede7ff; border-color:#ede7ff; color:#111; }
     .quiz-btn-active { background-color:#6b7280!important; border-color:#6b7280!important; color:#fff!important; }
     .quiz-btn-correct { background-color:#22c55e!important; border-color:#22c55e!important; color:#fff!important; }
     .quiz-btn-wrong { background-color:#ef4444!important; border-color:#ef4444!important; color:#fff!important; }
+    .quiz-btn-selected { background-color:#93c5fd!important; border-color:#93c5fd!important; color:#0b1f44!important; }
     .quiz-nav-scroll { display:flex; overflow-x:auto; scroll-behavior:smooth; padding:10px 0; -ms-overflow-style:none; scrollbar-width:none; }
     .quiz-nav-scroll::-webkit-scrollbar { display:none; }
   </style>
@@ -84,11 +85,14 @@
     nav.innerHTML = '';
     questions.forEach((q, i)=>{
       const btn = document.createElement('button');
+      btn.dataset.idx = i;
       let cls = 'btn ';
-      if(i===idx){
-        cls += 'quiz-btn-active';
-      }else if(q.confirmed){
+      if(q.confirmed){
         cls += (q.is_correct ? 'quiz-btn-correct' : 'quiz-btn-wrong');
+      }else if(i===idx){
+        cls += 'quiz-btn-active';
+      }else if(q.selected_id){
+        cls += 'quiz-btn-selected';
       }else{
         cls += 'btn-light';
       }
@@ -103,7 +107,8 @@
   function centerActiveNav(){
     const nav = document.getElementById('nav');
     if(!nav) return;
-    const active = nav.querySelector('.quiz-btn-active');
+    // Always center current index regardless of color state
+    const active = nav.querySelector(`[data-idx="${idx}"]`);
     if(!active) return;
     const left = active.offsetLeft - (nav.clientWidth/2 - active.clientWidth/2);
     nav.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
@@ -129,8 +134,8 @@
       let cls = 'option-btn mb-2';
       // If confirmed answer exists, color by correctness
       if(q.confirmed){
-        if(q.answer_id === o.id && q.is_correct){ cls += ' bg-success text-white'; }
-        else if(q.answer_id === o.id && !q.is_correct){ cls += ' bg-danger text-white'; }
+        if(q.answer_id === o.id && q.is_correct){ cls += ' bg-success text-white option-active'; }
+        else if(q.answer_id === o.id && !q.is_correct){ cls += ' bg-danger text-white option-active'; }
         else if(q.correct_option_id && o.id === q.correct_option_id){ cls += ' bg-success text-white'; }
       }else{
         if(q.selected_id === o.id){ cls += ' option-active'; }
