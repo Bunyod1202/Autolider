@@ -29,21 +29,15 @@ class Test(models.Model):
     @property
     def spent_time(self):
         hours = self.spent_seconds // 3600
-        minutes = self.spent_seconds % 3600 // 60
-        seconds = self.spent_seconds % 3600 % 60
+        minutes = (self.spent_seconds % 3600) // 60
+        seconds = self.spent_seconds % 60
         raw = ""
         if hours:
-            raw += self.user.text.left_hours.format(
-                hours=hours,
-            ) + " "
+            raw += self.user.text.left_hours.format(hours=hours) + " "
         if minutes:
-            raw += self.user.text.left_minutes.format(
-                minutes=minutes,
-            ) + " "
+            raw += self.user.text.left_minutes.format(minutes=minutes) + " "
         if seconds:
-            raw += self.user.text.left_seconds.format(
-                seconds=seconds,
-            ) + " "
+            raw += self.user.text.left_seconds.format(seconds=seconds) + " "
         raw += self.user.text.left
         return raw
 
@@ -52,7 +46,7 @@ class Test(models.Model):
         return self.user.text.correct_answers_info.format(
             correct_answers_count=self.correct_answers_count,
             quizzes_count=self.quizzes_count,
-            percentage=round(self.correct_answers_count*100/self.quizzes_count, 2),
+            percentage=round(self.correct_answers_count * 100 / self.quizzes_count, 2),
         )
 
     def __str__(self):
@@ -70,11 +64,21 @@ class Exam(models.Model):
     type = models.CharField(max_length=8, choices=Type.choices)
     date = models.DateTimeField()
     question_count = models.PositiveSmallIntegerField(default=20)
+<<<<<<< HEAD
     topics = models.ManyToManyField(
         'quizzes.Theme', blank=True, related_name='exams'
     )
     allowed_users = models.ManyToManyField(
         'users.User', through='tests.ExamAccess', related_name='allowed_exams', blank=True
+=======
+    topics = models.ManyToManyField('quizzes.Theme', blank=True, related_name='exams')
+    # Admin uchun userlarni faollashtirish: through bilan
+    allowed_users = models.ManyToManyField(
+        'users.User',
+        through='tests.ExamAccess',
+        related_name='allowed_exams',
+        blank=True,
+>>>>>>> 009973f (fix)
     )
     is_active = models.BooleanField(default=True)
     added_time = models.DateTimeField(auto_now_add=True)
@@ -94,6 +98,7 @@ class ExamAccess(models.Model):
 
     class Meta:
         unique_together = ('exam', 'user')
+<<<<<<< HEAD
 
     def __str__(self):
         return f"{self.user} → {self.exam}"
@@ -102,6 +107,14 @@ class ExamAccess(models.Model):
         verbose_name = 'Imtihon ruxsati'
         verbose_name_plural = 'Imtihon ruxsatlari'
 
+=======
+        verbose_name = 'Imtihon ruxsati'
+        verbose_name_plural = 'Imtihon ruxsatlari'
+
+    def __str__(self):
+        return f"{self.user} -> {self.exam}"
+
+>>>>>>> 009973f (fix)
 
 class ExamAttempt(models.Model):
     exam = models.ForeignKey(Exam, on_delete=models.CASCADE, related_name='attempts')

@@ -5,6 +5,7 @@ class TestsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'tests'
     verbose_name = 'Imtihonlar'
+<<<<<<< HEAD
 
     def ready(self):
         """Ensure admin registrations are imported; log any import errors.
@@ -38,3 +39,5 @@ class TestsConfig(AppConfig):
                         pass
         except Exception:
             pass
+=======
+>>>>>>> 009973f (fix)

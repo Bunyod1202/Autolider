@@ -1,4 +1,5 @@
 TOKEN = "7201071278:AAGG3FP-GQGMPgTIAbJmSpwgXga-Ak0pAa0"
+BOT_TOKEN = TOKEN 
 
 BASE_URL = "https://avto-lider.uz"
 
