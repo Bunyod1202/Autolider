@@ -64,3 +64,13 @@ def total_count(value):
         return nums[1] if len(nums) > 1 else (nums[0] if nums else '')
     except Exception:
         return ''
+
+
+@register.filter
+def strip_list_prefix(value):
+    """Remove leading list-style numeric prefixes like '1.', '2)' etc."""
+    try:
+        s = str(value)
+        return re.sub(r'^\s*\d+[\.)]?\s*', '', s)
+    except Exception:
+        return value

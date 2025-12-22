@@ -192,6 +192,10 @@ class Text(models.Model):
         max_length=63,
         default="Stat test",
     )
+    start_exam = models.CharField(
+        max_length=63,
+        default="Boshlash",
+    )
     # Exams flow
     enter_phone_for_exam = models.CharField(
         max_length=255,
@@ -209,6 +213,20 @@ class Text(models.Model):
         max_length=255,
         default="Savollar yetarli emas",
     )
+    exam_prev_label = models.CharField(max_length=63, default="Oldingi")
+    exam_next_label = models.CharField(max_length=63, default="Keyingi")
+    exam_confirm_label = models.CharField(max_length=63, default="Tasdiqlash")
+    exam_no_questions = models.CharField(max_length=127, default="Savollar topilmadi.")
+    exam_retry_not_allowed = models.CharField(max_length=127, default="Qayta topshirish uchun ruxsat kerak")
+    exam_not_started = models.CharField(max_length=127, default="Vaqti kelmagan")
+    exam_need_phone = models.CharField(max_length=127, default="Avval telefon kiriting")
+    exams_title = models.CharField(max_length=127, default="Imtihonlar")
+    correct_message = models.CharField(max_length=127, default="To'g'ri javob!")
+    wrong_message = models.CharField(max_length=255, default="Noto'g'ri. To'g'ri javob yuqorida yashil bilan belgilandi.")
+    save_label = models.CharField(max_length=63, default="Saqlash")
+    exam_stat_correct_label = models.CharField(max_length=63, default="To'g'ri:")
+    exam_stat_wrong_label = models.CharField(max_length=63, default="Noto'g'ri:")
+    exam_stat_total_label = models.CharField(max_length=63, default="Jami:")
     added_time = models.DateTimeField(
         auto_now_add=True,
     )

@@ -49,10 +49,10 @@
 
       <div class="wrap-purple">
         <div class="row g-3">
-          <div class="col-6 col-md-3"><div class="bg-white rounded p-2">To'g'ri: <b>{{ attempt.correct_count }}</b></div></div>
-          <div class="col-6 col-md-3"><div class="bg-white rounded p-2">Noto'g'ri: <b>{{ attempt.wrong_count }}</b></div></div>
-          <div class="col-6 col-md-3"><div class="bg-white rounded p-2">Jami: <b>{{ attempt.total_questions }}</b></div></div>
-          <div class="col-6 col-md-3"><div class="bg-white rounded p-2">Ketgan vaqt: <b>{{ spent_time_text }}</b></div></div>
+          <div class="col-6 col-md-3"><div class="bg-white rounded p-2">{{ user.text.exam_stat_correct_label|default:"To'g'ri:" }} <b>{{ attempt.correct_count }}</b></div></div>
+          <div class="col-6 col-md-3"><div class="bg-white rounded p-2">{{ user.text.exam_stat_wrong_label|default:"Noto'g'ri:" }} <b>{{ attempt.wrong_count }}</b></div></div>
+          <div class="col-6 col-md-3"><div class="bg-white rounded p-2">{{ user.text.exam_stat_total_label|default:"Jami:" }} <b>{{ attempt.total_questions }}</b></div></div>
+          <div class="col-6 col-md-3"><div class="bg-white rounded p-2">{{ user.text.spent_time|default:"Ketgan vaqt:" }} <b>{{ spent_time_text }}</b></div></div>
         </div>
       </div>
 

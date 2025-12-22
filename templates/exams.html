@@ -10,16 +10,16 @@
 </head>
 <body class="bg-light">
 <div class="container py-3">
-  <h5 class="mb-3">Imtihonlar</h5>
+  <h5 class="mb-3">{{ user.text.exams_title|default:user.text.exams|default:"Imtihonlar" }}</h5>
 
   {% if phone_missing %}
-    <div class="alert alert-warning">Telefon raqamingiz kiritilmagan. Davom etish uchun raqamingizni kiriting.</div>
+    <div class="alert alert-warning">{{ user.text.enter_phone_for_exam|default:"Telefon raqamingizni kiriting" }}</div>
     {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
     <form method="post" action="/bot/exams/save-phone/" class="card p-3 mb-3">
       <input type="hidden" name="user_id" value="{{ user.id }}"/>
-      <label class="form-label">Telefon raqami (+998901234567 yoki 901234567)</label>
+      <label class="form-label">{{ user.text.enter_phone_for_exam|default:"Telefon raqamingizni kiriting" }}</label>
       <input type="text" name="phone" class="form-control" required>
-      <button class="btn btn-primary mt-3" type="submit">Saqlash</button>
+      <button class="btn btn-primary mt-3" type="submit">{{ user.text.save_label|default:"Saqlash" }}</button>
     </form>
   {% endif %}
 
@@ -32,13 +32,13 @@
             <small class="text-muted">{{ ex.date }} · {{ ex.question_count }} ta</small>
           </div>
           {% if ex.started and not phone_missing and ex.allowed %}
-            <a class="btn btn-success" href="/bot/exams/{{ ex.id }}/?user_id={{ user.id }}">Boshlash</a>
+            <a class="btn btn-success" href="/bot/exams/{{ ex.id }}/?user_id={{ user.id }}">{{ user.text.start_exam|default:"Boshlash" }}</a>
           {% elif ex.started and not phone_missing and not ex.allowed %}
-            <span class="badge bg-secondary">Qayta topshirish uchun ruxsat kerak</span>
+            <span class="badge bg-secondary">{{ user.text.exam_retry_not_allowed|default:"Qayta topshirish uchun ruxsat kerak" }}</span>
           {% elif not ex.started %}
-            <span class="badge bg-secondary">Vaqti kelmagan</span>
+            <span class="badge bg-secondary">{{ user.text.exam_not_started|default:"Vaqti kelmagan" }}</span>
           {% else %}
-            <span class="badge bg-warning text-dark">Avval telefon kiriting</span>
+            <span class="badge bg-warning text-dark">{{ user.text.exam_need_phone|default:"Avval telefon kiriting" }}</span>
           {% endif %}
         </li>
       {% endfor %}
