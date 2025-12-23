@@ -221,6 +221,8 @@ class Text(models.Model):
     exam_not_started = models.CharField(max_length=127, default="Vaqti kelmagan")
     exam_need_phone = models.CharField(max_length=127, default="Avval telefon kiriting")
     exams_title = models.CharField(max_length=127, default="Imtihonlar")
+    exams_empty_message = models.CharField(max_length=255, default="Sizga hozircha imtihon ruxsatlari topilmadi.")
+    close_label = models.CharField(max_length=63, default="Yopish")
     correct_message = models.CharField(max_length=127, default="To'g'ri javob!")
     wrong_message = models.CharField(max_length=255, default="Noto'g'ri. To'g'ri javob yuqorida yashil bilan belgilandi.")
     save_label = models.CharField(max_length=63, default="Saqlash")

@@ -124,7 +124,7 @@ class ExamAdmin(admin.ModelAdmin):
 class ExamAccessAdmin(admin.ModelAdmin):
     list_display = ['id', 'exam', 'user', 'max_attempts']
     list_filter = ['exam', 'user']
-    search_fields = ['user__full_name', 'user__telegram_id', 'exam__title']
+    search_fields = ['user__full_name', 'user__telegram_id', 'user__phone_number', 'exam__title']
     autocomplete_fields = ['exam', 'user']
 
 
@@ -135,7 +135,7 @@ class ExamAttemptAdmin(admin.ModelAdmin):
         'correct_count', 'wrong_count', 'total_questions', 'spent_time'
     ]
     list_filter = ['exam', 'user']
-    search_fields = ['user__full_name', 'user__telegram_id', 'exam__title']
+    search_fields = ['user__full_name', 'user__telegram_id', 'user__phone_number', 'exam__title']
     autocomplete_fields = ['exam', 'user']
     inlines = [AttemptQuestionInline]
 

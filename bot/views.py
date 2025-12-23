@@ -442,7 +442,8 @@ def exam_result_view(request, attempt_id: int):
             'question': quiz.question(user.text.language),
             'image_url': quiz.image_url,
             'options': [
-                {'id': opt.id, 'text': re.sub(r'^\s*\d+[\.)]?\s*', '', opt.text(user.text.language)), 'is_correct': opt.is_correct}
+                # Show options exactly as authored (keep prefixes like "1.")
+                {'id': opt.id, 'text': opt.text(user.text.language), 'is_correct': opt.is_correct}
                 for opt in quiz.options.all()
             ],
             'user_answer_id': aq.user_answer_id,

@@ -44,10 +44,10 @@
       {% endfor %}
     </ul>
   {% else %}
-    <p class="text-muted">Sizga hozircha imtihon ruxsatlari topilmadi.</p>
+    <p class="text-muted">{{ user.text.exams_empty_message|default:"Sizga hozircha imtihon ruxsatlari topilmadi." }}</p>
   {% endif %}
   <div class="mt-3">
-    <button class="btn btn-outline-secondary" onclick="closeWebApp()">Yopish</button>
+    <button class="btn btn-outline-secondary" onclick="closeWebApp()">{{ user.text.close_label|default:"Yopish" }}</button>
   </div>
 </div>
 
