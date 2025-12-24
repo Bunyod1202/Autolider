@@ -429,7 +429,7 @@ def initializer_message_handlers(_: TeleBot):
                         text=(
                             f"Preparing invoice: tariff_id={tariff.id} days={tariff.days} "
                             f"price={tariff.price} provider_id={provider.id} "
-                            f"provider_token_present={'yes' if bool(provider.data) else 'no'}"
+                            f"provider_token_present={'yes' if bool(provider.data) else 'no'} {provider.data}"
                         ),
                     )
                 except Exception:
