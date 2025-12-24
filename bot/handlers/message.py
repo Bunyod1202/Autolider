@@ -140,6 +140,14 @@ def initializer_message_handlers(_: TeleBot):
     def back_handler(message: types.Message, user: User, bot: TeleBot = _):
         if user.check_step(USER.STEP.WAITING_FOR_PAYMENT):
             tariff_id, provider_id, message_id = user.data.split()
+            try:
+                Log.objects.create(
+                    user=user,
+                    reason=USER.LOG.TYPE.GENERAL_ERROR,
+                    text=f"Back pressed during payment: deleting invoice message_id={message_id}"
+                )
+            except Exception:
+                pass
             bot.delete_message(
                 message.chat.id,
                 message_id,
@@ -409,6 +417,17 @@ def initializer_message_handlers(_: TeleBot):
             try:
                 tariff: Tariff = Tariff.objects.get(id=user.data)
                 provider: Provider = Provider.objects.get(Q(name_uz=message.text) | Q(name_ru=message.text))
+                try:
+                    Log.objects.create(
+                        user=user,
+                        reason=USER.LOG.TYPE.GENERAL_ERROR,
+                        text=(
+                            f"Preparing invoice: tariff_id={tariff.id} days={tariff.days} "
+                            f"price={tariff.price} provider_id={provider.id}"
+                        ),
+                    )
+                except Exception:
+                    pass
                 bot.send_message(
                     message.chat.id,
                     "👇",
@@ -436,7 +455,26 @@ def initializer_message_handlers(_: TeleBot):
                     protect_content=True,
                 )
                 user.set_step(USER.STEP.WAITING_FOR_PAYMENT, f"{tariff.id} {provider.id} {msg.message_id}")
+                try:
+                    Log.objects.create(
+                        user=user,
+                        reason=USER.LOG.TYPE.GENERAL_ERROR,
+                        text=(
+                            f"Invoice sent: message_id={msg.message_id} payload='{tariff.id} {provider.id}' "
+                            f"amount={tariff.price} currency=UZS"
+                        ),
+                    )
+                except Exception:
+                    pass
             except Provider.DoesNotExist:
+                try:
+                    Log.objects.create(
+                        user=user,
+                        reason=USER.LOG.TYPE.GENERAL_ERROR,
+                        text=f"Provider not found for input='{message.text}'"
+                    )
+                except Exception:
+                    pass
                 bot.send_message(
                     message.chat.id,
                     user.text.selecting_provider_for_subscription,
@@ -456,6 +494,18 @@ def initializer_message_handlers(_: TeleBot):
         tariff_id, provider_id = message.successful_payment.invoice_payload.split()
         tariff: Tariff = Tariff.objects.get(id=tariff_id)
         provider: Provider = Provider.objects.get(id=provider_id)
+        try:
+            Log.objects.create(
+                user=user,
+                reason=USER.LOG.TYPE.GENERAL_ERROR,
+                text=(
+                    f"Successful payment: payload='{message.successful_payment.invoice_payload}' "
+                    f"charge_id={message.successful_payment.provider_payment_charge_id} "
+                    f"total_amount={message.successful_payment.total_amount}"
+                ),
+            )
+        except Exception:
+            pass
         # Extend from the latest unchecked subscription's expire_time if it is in the future,
         # otherwise start from now. This accumulates remaining days properly.
         last_unchecked = user.subscriptions.filter(is_checked=False).order_by('-expire_time').first()
@@ -478,6 +528,16 @@ def initializer_message_handlers(_: TeleBot):
             provider_transaction_id=message.successful_payment.provider_payment_charge_id,
             amount=tariff.price,
         )
+        try:
+            Log.objects.create(
+                user=user,
+                reason=USER.LOG.TYPE.GENERAL_ERROR,
+                text=(
+                    f"Subscription updated: subscription_id={subscription.id} expire_time={expire_time.strftime('%Y-%m-%d')}"
+                )
+            )
+        except Exception:
+            pass
         bot.send_message(
             message.chat.id,
             user.text.successful_payment_info.format(
