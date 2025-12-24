@@ -19,8 +19,24 @@ def initializer_pre_checkout_query_handlers(_: TeleBot):
                 )
             )
         except Exception:
-            pass
-        bot.answer_pre_checkout_query(
-            pre_checkout_query.id,
-            True
-        )
+            user = None
+        # Answer pre-checkout; log success/failure
+        try:
+            bot.answer_pre_checkout_query(
+                pre_checkout_query.id,
+                True
+            )
+            if user:
+                Log.objects.create(
+                    user=user,
+                    reason=USER.LOG.TYPE.GENERAL_ERROR,
+                    text="PreCheckout answered: ok=True"
+                )
+        except Exception as e:
+            if user:
+                Log.objects.create(
+                    user=user,
+                    reason=USER.LOG.TYPE.GENERAL_ERROR,
+                    text=f"PreCheckout answer failed: {e}"
+                )
+            raise

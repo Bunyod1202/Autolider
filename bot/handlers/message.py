@@ -138,6 +138,11 @@ def initializer_message_handlers(_: TeleBot):
     @_.message_handler(regexp="^🔙 ")
     @auth
     def back_handler(message: types.Message, user: User, bot: TeleBot = _):
+        Log.objects.create(
+                    user=user,
+                    reason=USER.LOG.TYPE.GENERAL_ERROR,
+                    text=f"CUSTOM: {json.dumps(user.data)}"
+                )
         if user.check_step(USER.STEP.WAITING_FOR_PAYMENT):
             tariff_id, provider_id, message_id = user.data.split()
             try:
@@ -423,7 +428,8 @@ def initializer_message_handlers(_: TeleBot):
                         reason=USER.LOG.TYPE.GENERAL_ERROR,
                         text=(
                             f"Preparing invoice: tariff_id={tariff.id} days={tariff.days} "
-                            f"price={tariff.price} provider_id={provider.id}"
+                            f"price={tariff.price} provider_id={provider.id} "
+                            f"provider_token_present={'yes' if bool(provider.data) else 'no'}"
                         ),
                     )
                 except Exception:
@@ -461,7 +467,8 @@ def initializer_message_handlers(_: TeleBot):
                         reason=USER.LOG.TYPE.GENERAL_ERROR,
                         text=(
                             f"Invoice sent: message_id={msg.message_id} payload='{tariff.id} {provider.id}' "
-                            f"amount={tariff.price} currency=UZS"
+                            f"amount={tariff.price} currency=UZS "
+                            f"tariff='{tariff.name(user.text.language)}' provider='{provider.name(user.text.language)}'"
                         ),
                     )
                 except Exception:
