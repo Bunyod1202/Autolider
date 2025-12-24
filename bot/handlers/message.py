@@ -426,7 +426,7 @@ def initializer_message_handlers(_: TeleBot):
                     ),
                     f"{tariff.id} {provider.id}",
                     provider.data,
-                    'uzs',
+                    'UZS',
                     [
                         types.LabeledPrice(
                             tariff.name(user.text.language),
