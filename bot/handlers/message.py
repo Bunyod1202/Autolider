@@ -491,36 +491,6 @@ def initializer_message_handlers(_: TeleBot):
                         ]
                     ])
                 )
-        elif user.check_step(USER.STEP.WAITING_FOR_PAYMENT):
-            Log.objects.create(
-                    user=user,
-                    reason=USER.LOG.TYPE.GENERAL_ERROR,
-                    text=f"CUSTOM: {json.dumps(user.data)}"
-                )
-            tariff_id, provider_id, message_id = user.data.split()
-            try:
-                Log.objects.create(
-                    user=user,
-                    reason=USER.LOG.TYPE.GENERAL_ERROR,
-                    text=f"Back pressed during payment: deleting invoice message_id={message_id}"
-                )
-            except Exception:
-                pass
-            bot.delete_message(
-                message.chat.id,
-                message_id,
-            )
-            user.set_step(USER.STEP.SELECT_PROVIDER, tariff_id)
-            bot.send_message(
-                message.chat.id,
-                user.text.selecting_provider_for_subscription,
-                reply_markup=get_keyboard_markup([
-                    [
-                        provider.name(user.text.language) for provider in Provider.objects.filter(is_active=True)
-                    ],
-                    user.text.back,
-                ])
-            )
         else:
             go_to_main(message, user)
 
