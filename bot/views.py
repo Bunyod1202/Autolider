@@ -10,7 +10,7 @@ import re
 
 from quizzes.models import Theme, Option, Quiz
 import random
-from tests.models import Test, Exam, ExamAccess, ExamAttempt, AttemptQuestion
+from tests.models import Test, Exam, ExamAttempt, AttemptQuestion
 from users.models import User
 from subscriptions.utils import refresh_user_active_status
 from bot.utils.helpers import normalize_phone_number
@@ -236,15 +236,21 @@ def exams_view(request):
     except User.DoesNotExist:
         return JsonResponse({'ok': False, 'error': f'user {user_id} not found'}, status=404)
 
+    # Only active subscribers can see exams
+    if not user.is_active:
+        return render(request, 'exams.html', {
+            'user': user,
+            'phone_missing': False,
+            'exams': [],
+            'error': getattr(user.text, 'subscription_required', 'Imtihonlar faqat obuna uchun.')
+        })
     # if phone missing, render phone form inside WebApp
     phone_missing = not bool(user.phone_number)
     now = timezone.now()
-    accesses = ExamAccess.objects.filter(user=user, exam__is_active=True).select_related('exam').order_by('exam__date')
+    # Show active exams to active subscribers; no attempt limits
+    exams_qs = Exam.objects.filter(is_active=True).order_by('date')
     exams = []
-    for acc in accesses:
-        ex = acc.exam
-        attempts_done = ExamAttempt.objects.filter(exam=ex, user=user, finished_at__isnull=False).count()
-        allowed = attempts_done < (acc.max_attempts or 1)
+    for ex in exams_qs:
         exams.append({
             'id': ex.id,
             'title': ex.title,
@@ -252,12 +258,28 @@ def exams_view(request):
             'started': ex.date <= now,
             'type': ex.type,
             'question_count': ex.question_count,
-            'allowed': allowed,
+            'allowed': True,
+        })
+    # Previous finished attempts for this user
+    attempts_qs = ExamAttempt.objects.filter(user=user, finished_at__isnull=False).select_related('exam').order_by('-finished_at', '-id')
+    attempts = []
+    for at in attempts_qs[:20]:
+        total = at.total_questions or 0
+        percent = int(round((at.correct_count * 100 / total), 0)) if total else 0
+        attempts.append({
+            'id': at.id,
+            'exam_title': getattr(at.exam, 'title', ''),
+            'finished_at': at.finished_at.strftime('%Y-%m-%d %H:%M') if at.finished_at else '',
+            'correct': at.correct_count,
+            'wrong': at.wrong_count,
+            'total': at.total_questions,
+            'percent': percent,
         })
     return render(request, 'exams.html', {
         'user': user,
         'phone_missing': phone_missing,
         'exams': exams,
+        'attempts': attempts,
     })
 
 
@@ -295,13 +317,10 @@ def exam_start_view(request, exam_id: int):
         exam = Exam.objects.get(id=exam_id, is_active=True)
     except Exam.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'Exam not found'}, status=404)
-    acc = ExamAccess.objects.filter(user=user, exam=exam).first()
-    if not acc:
-        return render(request, 'exam.html', {'user': user, 'error': 'Sizga imtihon ruxsati berilmagan'})
-    # Enforce attempts limit
-    done = ExamAttempt.objects.filter(exam=exam, user=user, finished_at__isnull=False).count()
-    if done >= (acc.max_attempts or 1):
-        return render(request, 'exam.html', {'user': user, 'error': 'Bu imtihonni qayta topshirish uchun admin ruxsati kerak'})
+    # Only active subscribers can start
+    if not user.is_active:
+        return render(request, 'exam.html', {'user': user, 'error': getattr(user.text, 'subscription_required', 'Imtihonlar faqat obuna uchun.')})
+    # No attempts limit
     if exam.date > timezone.now():
         return render(request, 'exam.html', {'user': user, 'error': 'Imtihon vaqti hali boshlanmagan'})
 

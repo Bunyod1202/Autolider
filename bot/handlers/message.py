@@ -181,6 +181,9 @@ def initializer_message_handlers(_: TeleBot):
         exams_label = getattr(user.text, 'exams', 'Stat test')
         start_label = getattr(user.text, 'start_exam', 'Start exam')
         if user.check_step(USER.STEP.MAIN) and message.text in (exams_label, start_label):
+            if not user.is_active:
+                bot.send_message(message.chat.id, getattr(user.text, 'subscription_required', 'Imtihonlar faqat obuna uchun.'))
+                return
             if not user.phone_number:
                 user.set_step(USER.STEP.EXAM_PROMPT_PHONE)
                 bot.send_message(

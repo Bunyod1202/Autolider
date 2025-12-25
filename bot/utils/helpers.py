@@ -72,23 +72,20 @@ def get_main_keyboard_markup(user):
             ),
         ),
     )
-    # Start/Exam buttons logic (time + access + phone)
+    # Exams button: visible only for active subscribers
     try:
-        from tests.models import ExamAccess
-        now = timezone.now()
-        # user has at least one active exam (may or may not have started)
-        any_access = ExamAccess.objects.filter(user=user, exam__is_active=True).exists()
-        if any_access:
-            # Always open exams WebApp; inside it we handle phone/login and timing
-            label = getattr(user.text, 'exams', 'Stat test') if user.phone_number else getattr(user.text, 'start_exam', 'Start exam')
+        from tests.models import Exam
+        if user.is_active and Exam.objects.filter(is_active=True).exists():
+            label = getattr(user.text, 'exams', 'Stat test')
             keyboard_markup.add(
                 types.KeyboardButton(
                     label,
-                    web_app=types.WebAppInfo(url=f"{BASE_URL}/bot/exams/?user_id={user.id}")
+                    web_app=types.WebAppInfo(
+                        url=f"{BASE_URL}/bot/exams/?user_id={user.id}"
+                    )
                 )
             )
     except Exception:
-        # If exams not set up yet, ignore silently
         pass
     keyboard_markup.add(
         types.KeyboardButton(
