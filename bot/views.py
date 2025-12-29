@@ -145,19 +145,23 @@ def test_view(request):
                     'name': theme.name(user.text.language),
                     'quizzes_count': len(active_quizzes),
                     'quizzes': [
-                        {
-                            'id': quiz.id,
-                            'question': quiz.question(user.text.language),
-                            'image_url': quiz.image_url,
-                            'options': [
-                                {
-                                    'id': option.id,
-                                    'text': option.text(user.text.language),
-                                    'is_correct': option.is_correct,
-                                } for option in quiz.options.all()
-                            ],
-                            'answer': quiz.options.filter(is_correct=True).first(),
-                        } for quiz in active_quizzes
+                        (lambda q: (
+                            (lambda opts: {
+                                'id': q.id,
+                                'question': q.question(user.text.language),
+                                'image_url': q.image_url,
+                                'options': [
+                                    {
+                                        'id': o.id,
+                                        'text': o.text(user.text.language),
+                                        'is_correct': o.is_correct,
+                                    } for o in opts
+                                ],
+                                'answer': q.options.filter(is_correct=True).first(),
+                            })(
+                                (lambda _l: (random.shuffle(_l) or _l))(list(q.options.all()))
+                            )
+                        ))(quiz) for quiz in active_quizzes
                     ]
                 },
             }
@@ -324,44 +328,47 @@ def exam_start_view(request, exam_id: int):
     if exam.date > timezone.now():
         return render(request, 'exam.html', {'user': user, 'error': 'Imtihon vaqti hali boshlanmagan'})
 
-    # Resume or create attempt with random questions
-    attempt = ExamAttempt.objects.filter(exam=exam, user=user, finished_at__isnull=True).first()
-    if not attempt:
-        # Ensure default topics for MID types if none selected
-        if exam.type != Exam.Type.FINAL and exam.topics.count() == 0:
-            try:
-                from quizzes.models import Theme
-                if exam.type == Exam.Type.MID_1:
-                    a, b = 1, 11
-                elif exam.type == Exam.Type.MID_2:
-                    a, b = 12, 22
-                else:
-                    a, b = 23, 29
-                selected_topics = list(Theme.objects.filter(is_active=True, order__gte=a, order__lte=b))
-                if not selected_topics:
-                    active = list(Theme.objects.filter(is_active=True).order_by('order', 'id'))
-                    selected_topics = [t for i, t in enumerate(active, start=1) if a <= i <= b]
-                if selected_topics:
-                    exam.topics.add(*selected_topics)
-            except Exception:
-                pass
-        # build pool
-        if exam.type == Exam.Type.FINAL:
-            pool = list(Quiz.objects.filter(is_active=True))
-        else:
-            pool = list(Quiz.objects.filter(is_active=True, theme__in=exam.topics.all()))
-        if len(pool) < exam.question_count:
-            return render(request, 'exam.html', {'user': user, 'error': 'Savollar yetarli emas'})
-        selected = random.sample(pool, exam.question_count)
-        attempt = ExamAttempt.objects.create(exam=exam, user=user, total_questions=exam.question_count)
-        AttemptQuestion.objects.bulk_create([
-            AttemptQuestion(attempt=attempt, question=q, order=i+1) for i, q in enumerate(selected)
-        ])
+    # Always start a fresh attempt: drop unfinished ones and build a new random set
+    ExamAttempt.objects.filter(exam=exam, user=user, finished_at__isnull=True).delete()
 
-    # Build questions data for WebApp
+    # Ensure default topics for MID types if none selected
+    if exam.type != Exam.Type.FINAL and exam.topics.count() == 0:
+        try:
+            from quizzes.models import Theme
+            if exam.type == Exam.Type.MID_1:
+                a, b = 1, 11
+            elif exam.type == Exam.Type.MID_2:
+                a, b = 12, 22
+            else:
+                a, b = 23, 29
+            selected_topics = list(Theme.objects.filter(is_active=True, order__gte=a, order__lte=b))
+            if not selected_topics:
+                active = list(Theme.objects.filter(is_active=True).order_by('order', 'id'))
+                selected_topics = [t for i, t in enumerate(active, start=1) if a <= i <= b]
+            if selected_topics:
+                exam.topics.add(*selected_topics)
+        except Exception:
+            pass
+    
+    # Build a fresh pool and sample without repetition
+    if exam.type == Exam.Type.FINAL:
+        pool = list(Quiz.objects.filter(is_active=True))
+    else:
+        pool = list(Quiz.objects.filter(is_active=True, theme__in=exam.topics.all()))
+    if len(pool) < exam.question_count:
+        return render(request, 'exam.html', {'user': user, 'error': 'Savollar yetarli emas'})
+    selected = random.sample(pool, exam.question_count)
+    attempt = ExamAttempt.objects.create(exam=exam, user=user, total_questions=exam.question_count)
+    AttemptQuestion.objects.bulk_create([
+        AttemptQuestion(attempt=attempt, question=q, order=i+1) for i, q in enumerate(selected)
+    ])
+
+    # Build questions data for WebApp (shuffle options per question)
     qitems = []
     for aq in attempt.attempt_questions.select_related('question').order_by('order'):
         quiz = aq.question
+        opts = list(quiz.options.all())
+        random.shuffle(opts)
         qitems.append({
             'id': quiz.id,
             'order': aq.order,
@@ -371,7 +378,7 @@ def exam_start_view(request, exam_id: int):
                 {
                     'id': opt.id,
                     'text': re.sub(r'^\s*\d+[\.)]?\s*', '', opt.text(user.text.language))
-                } for opt in quiz.options.all()
+                } for opt in opts
             ],
             'answer_id': aq.user_answer_id or 0,
         })
