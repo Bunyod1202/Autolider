@@ -368,7 +368,7 @@ def exam_start_view(request, exam_id: int):
     for aq in attempt.attempt_questions.select_related('question').order_by('order'):
         quiz = aq.question
         opts = list(quiz.options.all())
-        random.shuffle(opts)
+        # Options are now kept in their original order (not shuffled)
         qitems.append({
             'id': quiz.id,
             'order': aq.order,
