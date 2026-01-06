@@ -122,6 +122,7 @@ USE_TZ = False
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # ✅ staticfiles papkasiga o'zgartiring
+
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),  # ✅ Development uchun static papka
 ]
