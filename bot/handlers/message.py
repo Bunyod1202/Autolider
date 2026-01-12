@@ -462,7 +462,6 @@ def initializer_message_handlers(_: TeleBot):
                         ),
                     ],
                     protect_content=True,
-                    provider_timeout=getattr(settings, 'PROVIDER_ACCOUNT_TIMEOUT', 300),  # Default to 5 minutes if not set
                 )
                 user.set_step(USER.STEP.WAITING_FOR_PAYMENT, f"{tariff.id} {provider.id} {msg.message_id}")
                 try:

@@ -34,9 +34,6 @@ CSRF_TRUSTED_ORIGINS = [o.strip().strip('"').strip("'") for o in _csrf_env.split
 # CSRF sozlamalari
 CSRF_TRUSTED_ORIGINS = [ 'http://avto-lider.uz', 'https://avto-lider.uz', 'http://www.avto-lider.uz', 'https://www.avto-lider.uz', ]
 
-# Payment provider settings
-PROVIDER_ACCOUNT_TIMEOUT = 300  # 5 minutes timeout for payment providers (in seconds)
-
 # Application definition
 INSTALLED_APPS = [
     'django.contrib.admin',
