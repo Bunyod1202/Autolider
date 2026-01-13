@@ -505,133 +505,16 @@ def initializer_message_handlers(_: TeleBot):
         tariff: Tariff = Tariff.objects.get(id=tariff_id)
         provider: Provider = Provider.objects.get(id=provider_id)
         try:
-            # Log payment received
             Log.objects.create(
                 user=user,
-                reason=USER.LOG.TYPE.PAYMENT_RECEIVED,
-                text=f"Payment received: {message}"
-            )
-            
-            # Log invoice payload
-            Log.objects.create(
-                user=user,
-                reason=USER.LOG.TYPE.PAYMENT_INFO,
-                text=f"Invoice payload: {message.successful_payment.invoice_payload}"
-            )
-            
-            tariff_id, provider_id = message.successful_payment.invoice_payload.split()
-            Log.objects.create(
-                user=user,
-                reason=USER.LOG.TYPE.PAYMENT_INFO,
-                text=f"Parsed payload - tariff_id: {tariff_id}, provider_id: {provider_id}"
-            )
-            
-            tariff: Tariff = Tariff.objects.get(id=tariff_id)
-            provider: Provider = Provider.objects.get(id=provider_id)
-            
-            Log.objects.create(
-                user=user,
-                reason=USER.LOG.TYPE.PAYMENT_INFO,
-                text=f"Found tariff: {tariff.name(user.text.language)}, provider: {provider.name(user.text.language)}"
-            )
-            Log.objects.create(
-                user=user,
-                reason=USER.LOG.TYPE.PAYMENT_INFO,
+                reason=USER.LOG.TYPE.GENERAL_ERROR,
                 text=(
-                    f"Starting payment processing - "
-                    f"charge_id: {message.successful_payment.provider_payment_charge_id}, "
-                    f"amount: {message.successful_payment.total_amount}"
+                    f"Successful payment: payload='{message.successful_payment.invoice_payload}' "
+                    f"charge_id={message.successful_payment.provider_payment_charge_id} "
+                    f"total_amount={message.successful_payment.total_amount}"
                 ),
             )
-            
-            # Get or create subscription
-            last_subscription = user.subscriptions.filter(is_checked=False, expire_time__lt=now).first()
-            expire_time = now + timedelta(days=tariff.duration_days)
-            
-            Log.objects.create(
-                user=user,
-                reason=USER.LOG.TYPE.PAYMENT_INFO,
-                text=f"Creating subscription - tariff: {tariff.name(user.text.language)}, expires: {expire_time}"
-            )
-            
-            # Create subscription
-            subscription = Subscription.objects.create(
-                user=user,
-                tariff=tariff,
-                expire_time=expire_time,
-            )
-            
-            Log.objects.create(
-                user=user,
-                reason=USER.LOG.TYPE.PAYMENT_INFO,
-                text=f"Creating payment record - provider: {provider.name(user.text.language)}"
-            )
-            
-            # Create payment record
-            payment = Payment.objects.create(
-                user=user,
-                provider=provider,
-                subscription=subscription,
-                provider_transaction_id=message.successful_payment.provider_payment_charge_id,
-                amount=tariff.price,
-            )
-            
-            Log.objects.create(
-                user=user,
-                reason=USER.LOG.TYPE.PAYMENT_SUCCESS,
-                text=(
-                    f"Payment processed successfully - "
-                    f"payment_id: {payment.id}, "
-                    f"subscription_id: {subscription.id}"
-                )
-            )
-            
-            # Send success message to user
-            bot.send_message(
-                message.chat.id,
-                user.text.successful_payment_info.format(
-                    expire_time=expire_time.strftime("%d.%m.%Y"),
-                ),
-                reply_markup=reply_keyboard_remove,
-            )
-            
-            Log.objects.create(
-                user=user,
-                reason=USER.LOG.TYPE.PAYMENT_INFO,
-                text="Success message sent to user"
-            )
-            
-        except Exception as e:
-            # Log any errors that occur during payment processing
-            Log.objects.create(
-                user=user,
-                reason=USER.LOG.TYPE.PAYMENT_ERROR,
-                text=f"Error processing payment: {str(e)}",
-            )
-            
-            # Log the full traceback for debugging
-            import traceback
-            Log.objects.create(
-                user=user,
-                reason=USER.LOG.TYPE.PAYMENT_ERROR,
-                text=f"Payment error traceback: {traceback.format_exc()}",
-            )
-            
-            # Notify user about the error
-            try:
-                bot.send_message(
-                    message.chat.id,
-                    user.text.payment_error_message or "Kechirasiz, to'lovni qayta ishlashda xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring yoki administratorga murojaat qiling.",
-                )
-            except Exception as send_error:
-                Log.objects.create(
-                    user=user,
-                    reason=USER.LOG.TYPE.PAYMENT_ERROR,
-                    text=f"Failed to send error message to user: {str(send_error)}"
-                )
-                
-            # Re-raise the exception to ensure it's not silently caught
-            raise
+        except Exception:
             pass
         # Extend from the latest unchecked subscription's expire_time if it is in the future,
         # otherwise start from now. This accumulates remaining days properly.
