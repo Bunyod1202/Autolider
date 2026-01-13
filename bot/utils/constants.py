@@ -65,11 +65,19 @@ class USER:
 
         class TYPE:
             GENERAL_ERROR = '0'
-            API_EXCEPTION_ON_CALLBACK_QUERY_HANDLER = '1'
-            EXCEPTION_ON_CALLBACK_QUERY_HANDLER = '2'
+            PAYMENT_INFO = '1'
+            PAYMENT_RECEIVED = '2'
+            PAYMENT_SUCCESS = '3'
+            PAYMENT_ERROR = '4'
+            API_EXCEPTION_ON_CALLBACK_QUERY_HANDLER = '5'
+            EXCEPTION_ON_CALLBACK_QUERY_HANDLER = '6'
 
             DICT = {
                 GENERAL_ERROR: "General error",
+                PAYMENT_INFO: "Payment info",
+                PAYMENT_RECEIVED: "Payment received",
+                PAYMENT_SUCCESS: "Payment success",
+                PAYMENT_ERROR: "Payment error",
                 API_EXCEPTION_ON_CALLBACK_QUERY_HANDLER: "API exception on callback query handler",
                 EXCEPTION_ON_CALLBACK_QUERY_HANDLER: "Exception on callback query handler",
             }

@@ -501,6 +501,9 @@ def initializer_message_handlers(_: TeleBot):
     @auth
     def successful_payment_handler(message: types.Message, user: User, bot: TeleBot = _):
         now = timezone.now()
+        tariff_id, provider_id = message.successful_payment.invoice_payload.split()
+        tariff: Tariff = Tariff.objects.get(id=tariff_id)
+        provider: Provider = Provider.objects.get(id=provider_id)
         try:
             # Log payment received
             Log.objects.create(
