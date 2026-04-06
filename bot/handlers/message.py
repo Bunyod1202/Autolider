@@ -425,6 +425,16 @@ def initializer_message_handlers(_: TeleBot):
             try:
                 tariff: Tariff = Tariff.objects.get(id=user.data)
                 provider: Provider = Provider.objects.get(Q(name_uz=message.text) | Q(name_ru=message.text))
+                
+                # Validate provider has payment token
+                if not provider.data or not provider.data.strip():
+                    bot.send_message(
+                        message.chat.id,
+                        "❌ To'lov tizimi hozirda mavjud emas. Iltimos, keyinroq qayta urinib ko'ring",
+                        reply_markup=get_main_keyboard_markup(user.text.language)
+                    )
+                    return
+                
                 try:
                     Log.objects.create(
                         user=user,
@@ -501,9 +511,41 @@ def initializer_message_handlers(_: TeleBot):
     @auth
     def successful_payment_handler(message: types.Message, user: User, bot: TeleBot = _):
         now = timezone.now()
-        tariff_id, provider_id = message.successful_payment.invoice_payload.split()
-        tariff: Tariff = Tariff.objects.get(id=tariff_id)
-        provider: Provider = Provider.objects.get(id=provider_id)
+        
+        # Validate invoice_payload exists and is not empty
+        if not message.successful_payment or not message.successful_payment.invoice_payload:
+            Log.objects.create(
+                user=user,
+                reason=USER.LOG.TYPE.GENERAL_ERROR,
+                text=f"Successful payment error: invoice_payload is missing or empty"
+            )
+            bot.send_message(
+                message.chat.id,
+                "❌ To'lov ma'lumotlarida xatolik yuz berdi. Iltimos, qayta urinib ko'ring.",
+                reply_markup=get_main_keyboard_markup(user.text.language)
+            )
+            return
+        
+        try:
+            payload_parts = message.successful_payment.invoice_payload.split()
+            if len(payload_parts) != 2:
+                raise ValueError(f"Expected 2 parts in payload, got {len(payload_parts)}")
+            
+            tariff_id, provider_id = payload_parts
+            tariff: Tariff = Tariff.objects.get(id=tariff_id)
+            provider: Provider = Provider.objects.get(id=provider_id)
+        except (ValueError, Tariff.DoesNotExist, Provider.DoesNotExist) as e:
+            Log.objects.create(
+                user=user,
+                reason=USER.LOG.TYPE.GENERAL_ERROR,
+                text=f"Successful payment payload error: {str(e)}, payload='{message.successful_payment.invoice_payload}'"
+            )
+            bot.send_message(
+                message.chat.id,
+                "❌ To'lov ma'lumotlarini qayta ishlashda xatolik yuz berdi. Iltimos, admin bilan bog'laning.",
+                reply_markup=get_main_keyboard_markup(user.text.language)
+            )
+            return
         try:
             Log.objects.create(
                 user=user,
